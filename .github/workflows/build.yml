@@ -36,6 +36,7 @@ jobs:
           FLIPPER_BOARD: m5stickcplus2
         run: |
           . $IDF_PATH/export.sh
+          python -m pip install -q pillow  # icon conversion for the Bluetooth Remote assets
           idf.py -B build_esp32 -DFLIPPER_BOARD=m5stickcplus2 set-target esp32
           set -o pipefail
           # errors become public annotations (run logs need a login to read)
