@@ -1,0 +1,837 @@
+Filetype: IR signals file
+Version: 1
+# TVs/Sony - Lucaslhm/Flipper-IRDB (CC0), all models merged
+#
+name: On_off
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 15 00 00 00
+#
+name: Netflix
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 7C 00 00 00
+#
+name: Up
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 74 00 00 00
+#
+name: Down
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 75 00 00 00
+#
+name: Left
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 34 00 00 00
+#
+name: Right
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 33 00 00 00
+#
+name: Ok
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 65 00 00 00
+#
+name: Back
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 23 00 00 00
+#
+name: Vol_up
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 12 00 00 00
+#
+name: Vol_dn
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 13 00 00 00
+#
+name: Mute
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 14 00 00 00
+#
+name: Home
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 60 00 00 00
+#
+name: Hdmi
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 25 00 00 00
+#
+name: Ch_next
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 8958 4449 510 4475 515 4444 515 2213 508 4477 513 2215 516 2212 509 2219 512 2217 514 2214 517 2211 540 2214 517 2211 510 4449 510 2218 513 4472 507 2220 511 30572 8960 2218 513 87698 8966 2211 510 87701 8963 2214 568
+#
+name: Ch_prev
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 8956 4451 508 2220 511 2217 514 4470 510 4449 510 2218 544 2211 510 2218 513 2215 516 2212 509 2220 511 2217 514 2214 517 2211 510 2245 517 4441 508 2220 511 35049 8961 2215 516 87696 8959 2217 514 87698 8956 2220 511 87701 8964 2213 508
+#
+name: Apps
+type: parsed
+protocol: SIRC15
+address: C4 00 00 00
+command: 2A 00 00 00
+#
+name: Tv
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 24 00 00 00
+#
+name: Ch_next 2
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 10 00 00 00
+#
+name: Ch_prev 2
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 11 00 00 00
+#
+name: Play
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 1A 00 00 00
+#
+name: Pause
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 19 00 00 00
+#
+name: Stop
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 18 00 00 00
+#
+name: Fwd
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 1C 00 00 00
+#
+name: Rew
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 1B 00 00 00
+#
+name: Prev
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 3C 00 00 00
+#
+name: Next
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 3D 00 00 00
+#
+name: Rec
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 20 00 00 00
+#
+name: Google_play
+type: parsed
+protocol: SIRC15
+address: C4 00 00 00
+command: 46 00 00 00
+#
+name: Red
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 25 00 00 00
+#
+name: Green
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 26 00 00 00
+#
+name: Yellow
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 27 00 00 00
+#
+name: Blue
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 24 00 00 00
+#
+name: Action_menu
+type: parsed
+protocol: SIRC15
+address: C4 00 00 00
+command: 4B 00 00 00
+#
+name: Guide
+type: parsed
+protocol: SIRC15
+address: A4 00 00 00
+command: 5B 00 00 00
+#
+name: Help
+type: parsed
+protocol: SIRC15
+address: C4 00 00 00
+command: 4D 00 00 00
+#
+name: Title_list
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 65 00 00 00
+#
+name: Audio
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 17 00 00 00
+#
+name: Screen___
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 28 00 00 00
+#
+name: Swap
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 3B 00 00 00
+#
+name: Dig_analo
+type: parsed
+protocol: SIRC15
+address: 77 00 00 00
+command: 0D 00 00 00
+#
+name: Tv_radio
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 57 00 00 00
+#
+name: Exit
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 63 00 00 00
+#
+name: Ext_box_menu
+type: parsed
+protocol: SIRC15
+address: C4 00 00 00
+command: 49 00 00 00
+#
+name: 1
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 00 00 00 00
+#
+name: 2
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 01 00 00 00
+#
+name: 3
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 02 00 00 00
+#
+name: 4
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 03 00 00 00
+#
+name: 5
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 04 00 00 00
+#
+name: 6
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 05 00 00 00
+#
+name: 7
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 06 00 00 00
+#
+name: 8
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 07 00 00 00
+#
+name: 9
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 08 00 00 00
+#
+name: 0
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 09 00 00 00
+#
+name: I_plus
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 3A 00 00 00
+#
+name: Txt
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 3F 00 00 00
+#
+name: Options
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 36 00 00 00
+#
+name: Sync_menu
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 58 00 00 00
+#
+name: Hdmi_1
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 5A 00 00 00
+#
+name: Hdmi_2
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 5B 00 00 00
+#
+name: Hdmi_3
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 5C 00 00 00
+#
+name: Hdmi_4
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 5D 00 00 00
+#
+name: Dot
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 1D 00 00 00
+#
+name: Heart
+type: parsed
+protocol: SIRC15
+address: 77 00 00 00
+command: 76 00 00 00
+#
+name: Theatre
+type: parsed
+protocol: SIRC15
+address: 77 00 00 00
+command: 60 00 00 00
+#
+name: I-manual
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 7B 00 00 00
+#
+name: Scene
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 78 00 00 00
+#
+name: Screensize
+type: parsed
+protocol: SIRC15
+address: A4 00 00 00
+command: 3D 00 00 00
+#
+name: Internetvideo
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 79 00 00 00
+#
+name: Activepicture
+type: parsed
+protocol: SIRC15
+address: A4 00 00 00
+command: 77 00 00 00
+#
+name: Vol_up 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 12 00 00 00
+#
+name: Vol_dn 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 13 00 00 00
+#
+name: Mute 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 14 00 00 00
+#
+name: Ch_next 3
+type: parsed
+protocol: SIRC
+address: 0D 00 00 00
+command: 10 00 00 00
+#
+name: Ch_prev 3
+type: parsed
+protocol: SIRC
+address: 0D 00 00 00
+command: 11 00 00 00
+#
+name: Recall
+type: parsed
+protocol: SIRC
+address: 0D 00 00 00
+command: 33 00 00 00
+#
+name: 1 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 22 00 00 00
+#
+name: 2 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 1E 00 00 00
+#
+name: 3 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 1D 00 00 00
+#
+name: 4 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 21 00 00 00
+#
+name: 5 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 25 00 00 00
+#
+name: 6 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 23 00 00 00
+#
+name: 7 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 46 00 00 00
+#
+name: 8 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 6A 00 00 00
+#
+name: 9 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 20 00 00 00
+#
+name: 0 2
+type: parsed
+protocol: SIRC
+address: 10 00 00 00
+command: 7D 00 00 00
+#
+name: Enter
+type: parsed
+protocol: SIRC
+address: 0D 00 00 00
+command: 0C 00 00 00
+#
+name: Rewind
+type: parsed
+protocol: SIRC
+address: 11 00 00 00
+command: 33 00 00 00
+#
+name: Play 2
+type: parsed
+protocol: SIRC
+address: 11 00 00 00
+command: 32 00 00 00
+#
+name: Fastfwd
+type: parsed
+protocol: SIRC
+address: 11 00 00 00
+command: 34 00 00 00
+#
+name: Stop 2
+type: parsed
+protocol: SIRC
+address: 11 00 00 00
+command: 38 00 00 00
+#
+name: Pause 2
+type: parsed
+protocol: SIRC
+address: 11 00 00 00
+command: 39 00 00 00
+#
+name: Sleep
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 36 00 00 00
+#
+name: Freeze
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 5C 00 00 00
+#
+name: Picture
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 64 00 00 00
+#
+name: Dmex
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 6B 00 00 00
+#
+name: Cc
+type: parsed
+protocol: SIRC15
+address: A4 00 00 00
+command: 10 00 00 00
+#
+name: Ent
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 0B 00 00 00
+#
+name: Red 2
+type: parsed
+protocol: SIRC
+address: 03 00 00 00
+command: 4C 00 00 00
+#
+name: Green 2
+type: parsed
+protocol: SIRC
+address: 03 00 00 00
+command: 4D 00 00 00
+#
+name: Yellow 2
+type: parsed
+protocol: SIRC
+address: 03 00 00 00
+command: 4E 00 00 00
+#
+name: Blue 2
+type: parsed
+protocol: SIRC
+address: 03 00 00 00
+command: 4F 00 00 00
+#
+name: Sound
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 29 00 00 00
+#
+name: Football
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 76 00 00 00
+#
+name: Discover
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 73 00 00 00
+#
+name: Center
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 2549 455 1349 455 744 458 1348 455 745 457 746 456 1349 455 1295 508 1350 454 745 457 744 458 692 510 745 25084 2551 426 1323 508 743 458 1296 508 745 458 691 485 1373 429 1322 508 1295 509 691 483 719 510 692 483 719 25136 2552 453 1296 508 744 431 1323 480 772 432 718 510 1295 508 1295 508 1296 481 719 510 745 457 692 510 692 25160 2580 425 1324 508 745 456 1296 481 771 458 692 484 1322 508 1295 508 1296 509 691 510 692 510 692 510 692 25188 2499 478 1323 508 692 510 1295 508 692 511 691 510 1296 508 1295 481 1322 508 692 510 746 456 692 485 717 25187 2552 425 1324 508 692 482 1323 508 692 510 692 510 1296 508 1295 482 1321 508 692 484 718 510 691 511 691
+#
+name: Down 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 2467 509 1292 539 660 517 1288 513 687 514 1291 512 1322 482 1321 484 1319 484 716 485 717 482 719 485 716 24503 2526 481 1319 480 720 509 1296 508 691 483 1322 484 1319 483 1320 481 1321 483 717 486 715 510 691 485 716 24507 2525 479 1322 482 717 484 1322 483 716 510 1295 482 1321 483 1320 484 1319 509 691 486 716 484 717 511 690 24573 2499 480 1321 483 716 484 1321 508 691 486 1319 483 1320 509 1294 484 1319 483 716 487 715 512 689 513 688 24550 2525 481 1320 483 716 486 1320 509 690 512 1293 510 1293 485 1318 511 1291 512 688 515 637 565 637 565 637
+#
+name: Track_id
+type: parsed
+protocol: SIRC15
+address: 1A 00 00 00
+command: 7E 00 00 00
+#
+name: Pic Reset
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 6A 00 00 00
+#
+name: Demo Mode
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 7C 00 00 00
+#
+name: Pic Off
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 3E 00 00 00
+#
+name: Sub+
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 5C 00 00 00
+#
+name: Sub-
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 5D 00 00 00
+#
+name: Menu
+type: parsed
+protocol: SIRC15
+address: B0 00 00 00
+command: 77 00 00 00
+#
+name: S.Field
+type: parsed
+protocol: SIRC15
+address: B0 00 00 00
+command: 6E 00 00 00
+#
+name: Vert.S
+type: parsed
+protocol: SIRC20
+address: 10 05 00 00
+command: 7E 00 00 00
+#
+name: S.Bar/TV
+type: parsed
+protocol: SIRC15
+address: C4 00 00 00
+command: 24 00 00 00
+#
+name: 0Power
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 15 00 00 00
+#
+name: 0Input
+type: parsed
+protocol: SIRC15
+address: B0 00 00 00
+command: 69 00 00 00
+#
+name: 0Pic Reset
+type: parsed
+protocol: SIRC20
+address: 10 0D 00 00
+command: 7F 00 00 00
+#
+name: 0Demo Mode
+type: parsed
+protocol: SIRC20
+address: 10 0D 00 00
+command: 7E 00 00 00
+#
+name: 0Blue
+type: parsed
+protocol: SIRC20
+address: 10 05 00 00
+command: 77 00 00 00
+#
+name: 0Options
+type: parsed
+protocol: SIRC20
+address: 10 01 00 00
+command: 73 00 00 00
+#
+name: 0Back
+type: parsed
+protocol: SIRC20
+address: 10 01 00 00
+command: 7D 00 00 00
+#
+name: 0Home
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 53 00 00 00
+#
+name: 0Select
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 0C 00 00 00
+#
+name: 0Up
+type: parsed
+protocol: SIRC15
+address: B0 00 00 00
+command: 78 00 00 00
+#
+name: 0Down
+type: parsed
+protocol: SIRC15
+address: B0 00 00 00
+command: 79 00 00 00
+#
+name: 0Left
+type: parsed
+protocol: SIRC15
+address: B0 00 00 00
+command: 7A 00 00 00
+#
+name: 0Right
+type: parsed
+protocol: SIRC15
+address: B0 00 00 00
+command: 7B 00 00 00
+#
+name: 0Mute
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 14 00 00 00
+#
+name: 0Vol_up
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 12 00 00 00
+#
+name: 0Vol_dn
+type: parsed
+protocol: SIRC15
+address: 30 00 00 00
+command: 13 00 00 00
+#
+name: Sirc_1d
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 1D 00 00 00
+#
+name: Sirc_38
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 38 00 00 00
+#
+name: Power
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 2E 00 00 00
+#
+name: Power_off
+type: parsed
+protocol: SIRC
+address: 01 00 00 00
+command: 2F 00 00 00
+#
+name: Sound 2
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 7B 00 00 00
+#
+name: Replay
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 79 00 00 00
+#
+name: Advance
+type: parsed
+protocol: SIRC15
+address: 97 00 00 00
+command: 78 00 00 00

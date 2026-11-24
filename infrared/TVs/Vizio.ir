@@ -1,0 +1,513 @@
+Filetype: IR signals file
+Version: 1
+# TVs/Vizio - Lucaslhm/Flipper-IRDB (CC0), all models merged
+#
+name: Power
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 08 00 00 00
+#
+name: Input
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 2F 00 00 00
+#
+name: Vol_up
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 02 00 00 00
+#
+name: Vol_dn
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 03 00 00 00
+#
+name: Ch_next
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 00 00 00 00
+#
+name: Ch_prev
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 01 00 00 00
+#
+name: Mute
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 09 00 00 00
+#
+name: Up
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 45 00 00 00
+#
+name: Down
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 46 00 00 00
+#
+name: Ok
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 44 00 00 00
+#
+name: Left
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 47 00 00 00
+#
+name: Right
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 48 00 00 00
+#
+name: Home
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 2D 00 00 00
+#
+name: Back
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 4A 00 00 00
+#
+name: Menu
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 4F 00 00 00
+#
+name: Previous
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 1A 00 00 00
+#
+name: Info
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 1B 00 00 00
+#
+name: Exit
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 49 00 00 00
+#
+name: Cc
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 39 00 00 00
+#
+name: 1
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 11 00 00 00
+#
+name: 2
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 12 00 00 00
+#
+name: 3
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 13 00 00 00
+#
+name: 4
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 14 00 00 00
+#
+name: 5
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 15 00 00 00
+#
+name: 6
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 16 00 00 00
+#
+name: 7
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 17 00 00 00
+#
+name: 8
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 18 00 00 00
+#
+name: 9
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 19 00 00 00
+#
+name: 0
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 10 00 00 00
+#
+name: Pic
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 67 00 00 00
+#
+name: _
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: FF 00 00 00
+#
+name: Power 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9219 4484 662 469 661 469 661 1627 660 471 658 474 656 499 631 499 631 499 631 1657 630 1657 631 500 630 1657 631 1657 631 1657 630 1657 631 1657 631 500 630 500 630 500 630 1657 630 500 631 500 630 500 631 500 630 1657 630 1658 630 1657 631 500 630 1657 631 1658 630 1658 630 1658 630 40107 9106 2202 631
+#
+name: Vol_up 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9218 4484 636 495 660 469 661 1627 660 471 658 472 658 474 656 475 655 474 656 1632 655 1632 656 474 657 1632 656 1631 657 1632 656 1631 656 1632 656 474 656 1632 655 475 656 474 657 474 656 474 656 474 656 474 656 1632 655 474 656 1632 656 1632 656 1632 656 1632 656 1632 656 1632 656 40103 9107 2177 655
+#
+name: Vol_dn 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9245 4429 689 467 662 468 661 1626 660 471 658 473 657 474 656 474 656 474 656 1631 657 1631 657 474 656 1631 656 1632 656 1631 657 1631 657 1631 656 1632 656 1631 657 474 656 474 656 474 657 474 656 474 656 474 657 474 656 474 656 1631 656 1632 656 1632 656 1632 656 1632 656 1631 656 40082 9109 2175 656
+#
+name: Input 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9245 4428 690 467 662 468 661 1626 660 470 659 472 658 473 657 474 656 474 656 1631 657 1631 657 474 657 1631 657 1631 657 1631 656 1631 657 1631 657 1631 657 1631 657 1631 657 1631 657 474 656 1631 657 474 656 474 656 474 657 474 656 474 656 474 656 1632 656 474 656 1632 655 1632 656 39720 9108 2175 656
+#
+name: Up 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 153 4276 193
+#
+name: Down 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9217 4485 636 495 660 469 661 1627 659 471 658 473 657 474 656 475 655 475 655 1633 655 1633 655 475 655 1633 655 1633 655 1633 655 1632 656 1633 655 475 655 1633 655 1633 655 476 655 475 655 476 654 1633 655 475 655 1633 655 475 656 476 654 1633 654 1633 655 1633 655 475 655 1633 655 39716 9106 2177 656
+#
+name: Settings
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 329 7862 467
+#
+name: Mute 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9219 4485 636 495 660 469 661 1626 661 471 658 473 657 474 656 499 631 500 630 1657 630 1657 631 500 630 1657 630 1657 631 1657 631 1657 630 1657 631 1657 631 500 630 500 630 1657 631 500 630 500 630 500 630 500 631 500 630 1657 631 1657 631 500 630 1657 631 1658 630 1657 631 1658 630 39868 9106 2178 655
+#
+name: Menu 2
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 43 00 00 00
+#
+name: Guide
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 1C 00 00 00
+#
+name: Wide
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 77 00 00 00
+#
+name: Tv
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: D6 00 00 00
+#
+name: Av
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 51 00 00 00
+#
+name: Comp
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 5A 00 00 00
+#
+name: Hdmi
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: C6 00 00 00
+#
+name: Sleep
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 0E 00 00 00
+#
+name: Pause
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 37 00 00 00
+#
+name: Play
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 33 00 00 00
+#
+name: Stop
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 30 00 00 00
+#
+name: Link
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 63 00 00 00
+#
+name: Netflix
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: EB 00 00 00
+#
+name: Prime_video
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: EA 00 00 00
+#
+name: Disney+
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 1F 00 00 00
+#
+name: Crackle
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: F8 00 00 00
+#
+name: Watchfree
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: F7 00 00 00
+#
+name: Mic
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 40 00 00 00
+#
+name: Haystack
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 1E 00 00 00
+#
+name: Onscreen Console
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 20 00 00 00
+#
+name: Onscreen Console 2
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 21 00 00 00
+#
+name: Restart
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 25 00 00 00
+#
+name: Redbox
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 42 00 00 00
+#
+name: Pluto TV
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 60 00 00 00
+#
+name: HBO Max
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 61 00 00 00
+#
+name: Status
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 62 00 00 00
+#
+name: Xumo Play
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 6F 00 00 00
+#
+name: Comp 2
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 71 00 00 00
+#
+name: HDMI 1
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 81 00 00 00
+#
+name: HDMI 2
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 82 00 00 00
+#
+name: HDMI 3
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 83 00 00 00
+#
+name: VUDU
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: EC 00 00 00
+#
+name: iHeart
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: EE 00 00 00
+#
+name: USB
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: F0 00 00 00
+#
+name: Hulu
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: F9 00 00 00
+#
+name: Fastforward
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 36 00 00 00
+#
+name: Rewind
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 35 00 00 00
+#
+name: Record
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 34 00 00 00
+#
+name: Enter_
+type: parsed
+protocol: NEC
+address: 04 00 00 00
+command: 3A 00 00 00
+#
+name: Power 3
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9016 4408 603 512 602 512 629 1599 686 428 630 483 630 484 629 485 628 492 627 1604 625 1605 624 491 623 1630 599 1631 598 1631 598 1631 598 1636 599 515 599 515 599 515 599 1631 599 515 599 515 599 515 599 521 599 1631 599 1631 599 1631 598 515 599 1631 598 1631 598 1631 598 1632 598 39999 9016 2166 626 95735 9012 2168 625 95735 9013 2167 626
+#
+name: Captions_cc
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 8992 4433 602 512 602 511 683 1546 630 484 630 483 630 484 629 486 627 493 626 1629 600 1629 600 514 600 1630 599 1631 599 1631 598 1631 599 1636 599 1631 599 515 599 515 599 1631 598 1631 599 1631 599 516 598 521 599 516 598 1631 598 1631 599 516 598 516 598 516 598 1631 598 1632 599 40001 9017 2192 600
+#
+name: Prev
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 8993 4435 602 512 683 430 629 1600 630 484 630 484 629 486 627 488 625 519 600 1630 600 1631 599 515 599 1632 598 1632 598 1632 598 1632 598 1637 598 516 598 1632 598 516 598 1632 598 1632 598 516 598 516 598 522 598 1632 598 516 598 1632 598 516 598 516 598 1632 598 1632 598 1633 598 40011 9018 2168 625
+#
+name: 3 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 8992 4435 602 512 684 430 684 1546 684 430 684 431 628 486 627 513 601 519 600 1631 599 1631 599 516 598 1632 598 1632 598 1632 598 1632 598 1637 598 1632 598 1632 598 516 598 516 598 1632 598 516 598 516 598 522 598 516 598 516 598 1632 598 1632 598 516 598 1632 598 1632 598 1633 598 40014 9019 2193 600
+#
+name: 6 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9025 4435 602 512 628 486 684 1544 686 429 629 485 628 487 626 489 625 496 623 1631 598 1631 598 516 598 1632 598 1632 598 1632 598 1632 598 1637 598 516 598 1632 598 1632 598 516 598 1632 598 516 598 516 598 522 598 1632 598 516 598 516 598 1632 598 516 598 1632 598 1632 598 1633 598 40014 9018 2170 623
+#
+name: 7 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 8995 4435 602 512 683 430 684 1546 684 430 684 430 629 486 627 489 625 519 600 1630 600 1631 599 516 598 1632 598 1632 598 1632 598 1632 598 1638 598 1632 598 1633 597 1632 598 517 598 1633 597 517 598 516 598 522 598 517 597 517 597 517 597 1632 598 517 597 1633 597 1633 597 1634 597 40015 9018 2194 599
+#
+name: 8 2
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 9083 4344 687 455 633 481 633 1572 658 481 632 482 631 483 630 484 629 491 628 1602 628 1603 626 488 626 1604 626 1604 626 1604 626 1604 626 1609 626 488 626 488 626 488 626 1604 626 1604 626 488 626 489 625 494 626 1604 626 1604 626 1604 626 489 626 488 626 1604 626 1605 625 1605 626 40010 9027 2159 628

@@ -4,7 +4,6 @@ button names normalised to the ones each universal remote screen uses. Entries t
 firmware would reject are dropped (it stops reading a file at the first bad signal)."""
 import json, os, re, sys, urllib.request, urllib.parse, concurrent.futures as cf
 
-out_dir, tree_json = sys.argv[1], sys.argv[2]
 IRDB = "https://raw.githubusercontent.com/Lucaslhm/Flipper-IRDB/main/"
 M5 = "https://raw.githubusercontent.com/trollmaster419/m5resources/main/infrared/assets/"
 
@@ -72,39 +71,45 @@ def valid(body):
         return False
 
 
-tree = [x["path"] for x in json.load(open(tree_json))["tree"] if x["path"].endswith(".ir")]
-for remote, (folders, names) in REMOTES.items():
-    paths = [p for p in tree if p.split("/")[0] in folders]
-    seen, entries, per, before, dropped = set(), [], {}, {}, 0
+def main():
+    out_dir, tree_json = sys.argv[1], sys.argv[2]
+    tree = [x["path"] for x in json.load(open(tree_json))["tree"] if x["path"].endswith(".ir")]
+    for remote, (folders, names) in REMOTES.items():
+        paths = [p for p in tree if p.split("/")[0] in folders]
+        seen, entries, per, before, dropped = set(), [], {}, {}, 0
 
-    def add(n, b):
-        global dropped
-        if (n, tuple(b)) in seen:
-            return
-        if not valid(b):
-            dropped += 1
-            return
-        seen.add((n, tuple(b)))
-        entries.append((n, b))
-        per[n] = per.get(n, 0) + 1
+        def add(n, b):
+            nonlocal dropped
+            if (n, tuple(b)) in seen:
+                return
+            if not valid(b):
+                dropped += 1
+                return
+            seen.add((n, tuple(b)))
+            entries.append((n, b))
+            per[n] = per.get(n, 0) + 1
 
-    base_name = "fans" if remote == "fans" else remote
-    for n, b in signals(fetch(M5 + base_name + ".ir")):
-        add(n, b)
-    before = dict(per)
-    with cf.ThreadPoolExecutor(16) as ex:
-        texts = list(ex.map(lambda p: fetch(IRDB + urllib.parse.quote(p)), paths))
-    for text in texts:
-        for n, b in signals(text):
-            key = n.strip().lower().replace(" ", "_")
-            for target, rx in names:
-                if re.fullmatch(rx, key):
-                    add(target, b)
-    with open(os.path.join(out_dir, remote + "_plus.ir"), "w", newline="\n") as f:
-        f.write("Filetype: IR library file\nVersion: 1\n")
-        f.write(f"# {remote}: trollmaster419/m5resources + Lucaslhm/Flipper-IRDB (CC0), merged\n")
-        for n, b in entries:
-            f.write("#\nname: " + n + "\n" + "\n".join(b) + "\n")
-    summary = ", ".join(f"{t} {before.get(t, 0)}->{per.get(t, 0)}" for t, _ in names)
-    print(f"{remote:10} {len(texts):3} files, dropped {dropped:3}: {summary}")
-    assert all(per.get(t, 0) >= before.get(t, 0) for t, _ in names), remote
+        base_name = "fans" if remote == "fans" else remote
+        for n, b in signals(fetch(M5 + base_name + ".ir")):
+            add(n, b)
+        before = dict(per)
+        with cf.ThreadPoolExecutor(16) as ex:
+            texts = list(ex.map(lambda p: fetch(IRDB + urllib.parse.quote(p)), paths))
+        for text in texts:
+            for n, b in signals(text):
+                key = n.strip().lower().replace(" ", "_")
+                for target, rx in names:
+                    if re.fullmatch(rx, key):
+                        add(target, b)
+        with open(os.path.join(out_dir, remote + "_plus.ir"), "w", newline="\n") as f:
+            f.write("Filetype: IR library file\nVersion: 1\n")
+            f.write(f"# {remote}: trollmaster419/m5resources + Lucaslhm/Flipper-IRDB (CC0), merged\n")
+            for n, b in entries:
+                f.write("#\nname: " + n + "\n" + "\n".join(b) + "\n")
+        summary = ", ".join(f"{t} {before.get(t, 0)}->{per.get(t, 0)}" for t, _ in names)
+        print(f"{remote:10} {len(texts):3} files, dropped {dropped:3}: {summary}")
+        assert all(per.get(t, 0) >= before.get(t, 0) for t, _ in names), remote
+
+
+if __name__ == "__main__":
+    main()

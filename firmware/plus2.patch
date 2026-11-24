@@ -1,3 +1,50 @@
+diff --git a/applications/main/infrared/scenes/infrared_scene_config.h b/applications/main/infrared/scenes/infrared_scene_config.h
+index 89c03b8..3561f2e 100644
+--- a/applications/main/infrared/scenes/infrared_scene_config.h
++++ b/applications/main/infrared/scenes/infrared_scene_config.h
+@@ -17,6 +17,7 @@ ADD_SCENE(infrared, remote_list, RemoteList)
+ ADD_SCENE(infrared, universal, Universal)
+ ADD_SCENE(infrared, universal_tv, UniversalTV)
+ ADD_SCENE(infrared, universal_ac, UniversalAC)
++ADD_SCENE(infrared, universal_ac_full, UniversalACFull)
+ ADD_SCENE(infrared, universal_fan, UniversalFan)
+ ADD_SCENE(infrared, universal_audio, UniversalAudio)
+ ADD_SCENE(infrared, universal_projector, UniversalProjector)
+diff --git a/applications/main/infrared/scenes/infrared_scene_universal.c b/applications/main/infrared/scenes/infrared_scene_universal.c
+index 2a15695..7a06a76 100644
+--- a/applications/main/infrared/scenes/infrared_scene_universal.c
++++ b/applications/main/infrared/scenes/infrared_scene_universal.c
+@@ -7,6 +7,7 @@ typedef enum {
+     SubmenuIndexUniversalLEDs,
+     SubmenuIndexUniversalFan,
+     SubmenuIndexUniversalAirConditioner,
++    SubmenuIndexUniversalAcFull,
+ } SubmenuIndex;
+ 
+ static void infrared_scene_universal_submenu_callback(void* context, uint32_t index) {
+@@ -59,6 +60,12 @@ void infrared_scene_universal_on_enter(void* context) {
+         SubmenuIndexUniversalAirConditioner,
+         infrared_scene_universal_submenu_callback,
+         context);
++    submenu_add_item(
++        submenu,
++        "AC Full Control",
++        SubmenuIndexUniversalAcFull,
++        infrared_scene_universal_submenu_callback,
++        context);
+ 
+     submenu_set_selected_item(
+         submenu, scene_manager_get_scene_state(infrared->scene_manager, InfraredSceneUniversal));
+@@ -87,6 +94,9 @@ bool infrared_scene_universal_on_event(void* context, SceneManagerEvent event) {
+         } else if(event.event == SubmenuIndexUniversalFan) {
+             scene_manager_next_scene(scene_manager, InfraredSceneUniversalFan);
+             consumed = true;
++        } else if(event.event == SubmenuIndexUniversalAcFull) {
++            scene_manager_next_scene(scene_manager, InfraredSceneUniversalACFull);
++            consumed = true;
+         } else if(event.event == SubmenuIndexUniversalAirConditioner) {
+             scene_manager_next_scene(scene_manager, InfraredSceneUniversalAC);
+             consumed = true;
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_ac.c b/applications/main/infrared/scenes/infrared_scene_universal_ac.c
 index 15c4b8d..b7f4075 100644
 --- a/applications/main/infrared/scenes/infrared_scene_universal_ac.c
@@ -56,6 +103,159 @@ index 15c4b8d..b7f4075 100644
      infrared_brute_force_add_record(brute_force, i++, "Dh");
      button_panel_add_item(
          button_panel,
+diff --git a/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
+new file mode 100644
+index 0000000..c342751
+--- /dev/null
++++ b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
+@@ -0,0 +1,147 @@
++#include "../infrared_app_i.h" // IWYU pragma: keep
++
++// AC Full: set power, mode, temperature and fan directly, like the AC's own remote.
++// AC remotes send the whole state in every press, so this builds the frame itself
++// instead of replaying recordings. Protocol: Coolix (Midea and the many brands
++// built on Midea units). Each change is sent right away.
++
++typedef enum { AcPower, AcMode, AcTemp, AcFan, AcSend } AcItem;
++
++static const char* const AC_POWER[] = {"On", "Off"};
++static const char* const AC_MODE[] = {"Cool", "Heat", "Dry", "Auto", "Fan"};
++static const char* const AC_FAN[] = {"Auto", "Low", "Med", "High"};
++#define AC_TEMP_MIN 17
++#define AC_TEMP_MAX 30
++
++static struct {
++    uint8_t power, mode, temp_idx, fan; // indexes into the tables above
++} ac = {0, 0, 24 - AC_TEMP_MIN, 0}; // On, Cool, 24 C, Auto (kept while the app runs)
++
++// Coolix 24-bit state: [B2][fan:3 | sensor:5 = 0x1F][temp:4 | mode:2 | 00]
++static uint32_t coolix_state(void) {
++    // temperature codes 17..30 C (Gray-code-like table of the protocol)
++    static const uint8_t TEMP[] = {0x0, 0x1, 0x3, 0x2, 0x6, 0x7, 0x5, 0x4, 0xC, 0xD, 0x9, 0x8, 0xA, 0xB};
++    static const uint8_t MODE[] = {0x0 /*cool*/, 0x3 /*heat*/, 0x1 /*dry*/, 0x2 /*auto*/, 0x1 /*fan*/};
++    static const uint8_t FAN[] = {0x5 /*auto*/, 0x4 /*low*/, 0x2 /*med*/, 0x1 /*high*/};
++    if(ac.power == 1) return 0xB27BE0; // Off
++    uint8_t temp = TEMP[ac.temp_idx], fan = FAN[ac.fan];
++    if(ac.mode == 4) temp = 0xE; // Fan only = Dry bits + temp code 0b1110
++    if(ac.mode == 2 || ac.mode == 3) fan = 0x0; // Dry / Auto: unit picks the fan
++    return 0xB20000u | ((uint32_t)(fan << 5 | 0x1F) << 8) | (uint32_t)(temp << 4) |
++           (uint32_t)(MODE[ac.mode] << 2);
++}
++
++// Each byte is followed by its inverse, MSB first; the frame is sent twice.
++// 2 x (2 header + 48 bits x 2 + 1 footer) + 1 gap = 199 timings, ends on a mark.
++static size_t coolix_timings(uint32_t state, uint32_t* t) {
++    size_t n = 0;
++    for(int rep = 0; rep < 2; rep++) {
++        if(rep) t[n++] = 5244; // gap between the two copies
++        t[n++] = 4692;
++        t[n++] = 4416;
++        for(int byte = 2; byte >= 0; byte--) {
++            uint8_t v = (uint8_t)(state >> (byte * 8));
++            for(int inv = 0; inv < 2; inv++, v = (uint8_t)~v) {
++                for(int bit = 7; bit >= 0; bit--) {
++                    t[n++] = 552;
++                    t[n++] = (v >> bit) & 1 ? 1656 : 552;
++                }
++            }
++        }
++        t[n++] = 552;
++    }
++    return n;
++}
++
++static void ac_full_send(void) {
++    uint32_t timings[200];
++    size_t n = coolix_timings(coolix_state(), timings);
++    InfraredSignal* signal = infrared_signal_alloc();
++    infrared_signal_set_raw_signal(signal, timings, n, 38000, 0.33f);
++    infrared_signal_transmit(signal);
++    infrared_signal_free(signal);
++}
++
++static void ac_full_set_text(VariableItem* item, AcItem which) {
++    char buf[8];
++    switch(which) {
++    case AcPower:
++        variable_item_set_current_value_text(item, AC_POWER[ac.power]);
++        break;
++    case AcMode:
++        variable_item_set_current_value_text(item, AC_MODE[ac.mode]);
++        break;
++    case AcTemp:
++        snprintf(buf, sizeof(buf), "%u C", (unsigned)(ac.temp_idx + AC_TEMP_MIN));
++        variable_item_set_current_value_text(item, buf);
++        break;
++    case AcFan:
++        variable_item_set_current_value_text(item, AC_FAN[ac.fan]);
++        break;
++    default:
++        break;
++    }
++}
++
++static void ac_full_changed(VariableItem* item) {
++    InfraredApp* infrared = variable_item_get_context(item);
++    uint8_t v = variable_item_get_current_value_index(item);
++    AcItem which = (AcItem)variable_item_list_get_selected_item_index(infrared->var_item_list);
++    if(which == AcPower) ac.power = v;
++    if(which == AcMode) ac.mode = v;
++    if(which == AcTemp) ac.temp_idx = v;
++    if(which == AcFan) ac.fan = v;
++    ac_full_set_text(item, which);
++    // changing a setting turns the AC on with it, like a real remote
++    if(which != AcPower && ac.power == 1) {
++        ac.power = 0;
++        variable_item_set_current_value_index(
++            variable_item_list_get(infrared->var_item_list, AcPower), 0);
++        ac_full_set_text(variable_item_list_get(infrared->var_item_list, AcPower), AcPower);
++    }
++    view_dispatcher_send_custom_event(infrared->view_dispatcher, AcSend);
++}
++
++static void ac_full_enter(void* context, uint32_t index) {
++    InfraredApp* infrared = context;
++    UNUSED(index);
++    view_dispatcher_send_custom_event(infrared->view_dispatcher, AcSend);
++}
++
++void infrared_scene_universal_ac_full_on_enter(void* context) {
++    InfraredApp* infrared = context;
++    VariableItemList* list = infrared->var_item_list;
++    const struct {
++        const char* label;
++        uint8_t count, value;
++    } rows[] = {
++        {"Power", COUNT_OF(AC_POWER), ac.power},
++        {"Mode", COUNT_OF(AC_MODE), ac.mode},
++        {"Temp", AC_TEMP_MAX - AC_TEMP_MIN + 1, ac.temp_idx},
++        {"Fan", COUNT_OF(AC_FAN), ac.fan},
++    };
++    for(size_t i = 0; i < COUNT_OF(rows); i++) {
++        VariableItem* item =
++            variable_item_list_add(list, rows[i].label, rows[i].count, ac_full_changed, infrared);
++        variable_item_set_current_value_index(item, rows[i].value);
++        ac_full_set_text(item, (AcItem)i);
++    }
++    VariableItem* send = variable_item_list_add(list, "Send again (OK)", 1, NULL, infrared);
++    variable_item_set_current_value_text(send, "Midea");
++    variable_item_list_set_enter_callback(list, ac_full_enter, infrared);
++    view_dispatcher_switch_to_view(infrared->view_dispatcher, InfraredViewVariableList);
++}
++
++bool infrared_scene_universal_ac_full_on_event(void* context, SceneManagerEvent event) {
++    UNUSED(context);
++    if(event.type == SceneManagerEventTypeCustom && event.event == AcSend) {
++        ac_full_send();
++        return true;
++    }
++    return false;
++}
++
++void infrared_scene_universal_ac_full_on_exit(void* context) {
++    InfraredApp* infrared = context;
++    variable_item_list_reset(infrared->var_item_list);
++}
 diff --git a/applications/main/wlan_app/scenes/scene_app_store.c b/applications/main/wlan_app/scenes/scene_app_store.c
 new file mode 100644
 index 0000000..2f2015b

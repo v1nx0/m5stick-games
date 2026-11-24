@@ -1,0 +1,849 @@
+Filetype: IR signals file
+Version: 1
+# TVs/Toshiba - Lucaslhm/Flipper-IRDB (CC0), all models merged
+#
+name: Power
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 12 00 00 00
+#
+name: Vol_up
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 1A 00 00 00
+#
+name: Vol_dn
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 1E 00 00 00
+#
+name: Mute
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 10 00 00 00
+#
+name: Ch_next
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 1B 00 00 00
+#
+name: Ch_prev
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 1F 00 00 00
+#
+name: Ok
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 21 00 00 00
+#
+name: Up
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 19 00 00 00
+#
+name: Down
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 1D 00 00 00
+#
+name: Left
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 42 00 00 00
+#
+name: Right
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 40 00 00 00
+#
+name: TXT
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 17 00 00 00
+#
+name: Back
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 64 00 00 00
+#
+name: Play
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 67 00 00 00
+#
+name: Pause
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 6A 00 00 00
+#
+name: Stop
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 68 00 00 00
+#
+name: FF
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 6B 00 00 00
+#
+name: RW
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 6C 00 00 00
+#
+name: Input
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 14 00 00 00
+#
+name: Exit
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 43 00 00 00
+#
+name: Info
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 1C 00 00 00
+#
+name: Input 2
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 0F 00 00 00
+#
+name: Power 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 46 B9 00 00
+#
+name: Home
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 9f 60 00 00
+#
+name: Menu
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 45 BA 00 00
+#
+name: Back 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 0D F2 00 00
+#
+name: Vol_up 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 0C F3 00 00
+#
+name: Vol_dn 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 19 E6 00 00
+#
+name: Mute 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 4C B3 00 00
+#
+name: Up 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 48 b7 00 00
+#
+name: Down 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 4D B2 00 00
+#
+name: Left 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 4e b1 00 00
+#
+name: Right 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 49 B6 00 00
+#
+name: Select
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 4a b5 00 00
+#
+name: Rewind
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 16 E9 00 00
+#
+name: Play_pause
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 5B A4 00 00
+#
+name: Fast_forward
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 17 E8 00 00
+#
+name: Guide
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 14 EB 00 00
+#
+name: Ch_next 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 0F F0 00 00
+#
+name: Ch_prev 2
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 5A A5 00 00
+#
+name: Recent_apps
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: b1 4e 00 00
+#
+name: Apps
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: a2 5d 00 00
+#
+name: Netflix
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 5f a0 00 00
+#
+name: Amazon_music
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: A3 5C 00 00
+#
+name: Prime_video
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: a1 5e 00 00
+#
+name: Settings
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 96 69 00 00
+#
+name: Bluetooth
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: A6 59 00 00
+#
+name: Alexa
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: a0 5f 00 00
+#
+name: Menu 2
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 5B 00 00 00
+#
+name: 1
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 01 00 00 00
+#
+name: 2
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 02 00 00 00
+#
+name: 3
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 03 00 00 00
+#
+name: 4
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 04 00 00 00
+#
+name: 5
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 05 00 00 00
+#
+name: 6
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 06 00 00 00
+#
+name: 7
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 07 00 00 00
+#
+name: 8
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 08 00 00 00
+#
+name: 9
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 09 00 00 00
+#
+name: 0
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 00 00 00 00
+#
+name: Info 2
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 16 00 00 00
+#
+name: Rec
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 6F 00 00 00
+#
+name: L/r
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 5A 00 00 00
+#
+name: Previous_|_hold
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 54 00 00 00
+#
+name: Next_|_list
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 15 00 00 00
+#
+name: Revind_|_language
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 53 00 00 00
+#
+name: Forward_|_radio
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 0D 00 00 00
+#
+name: Update_|_ttx
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 6E 00 00 00
+#
+name: List
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 47 00 00 00
+#
+name: Red
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 48 00 00 00
+#
+name: Green_|_subtitle
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 49 00 00 00
+#
+name: Yellow_|_fav
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 4A 00 00 00
+#
+name: Blue_|_epg
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 4B 00 00 00
+#
+name: F1
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 22 00 00 00
+#
+name: P.mode_(smart_picture)
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 18 00 00 00
+#
+name: Enter
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 89 00 00 00
+#
+name: Up 3
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 82 00 00 00
+#
+name: Down 3
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 83 00 00 00
+#
+name: Play 2
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 30 00 00 00
+#
+name: Stop 2
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 31 00 00 00
+#
+name: 100
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 0A 00 00 00
+#
+name: Fav
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 5D 00 00 00
+#
+name: Digit
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 0B 00 00 00
+#
+name: Power 3
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 0C 00 00 00
+#
+name: Mute 3
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 0D 00 00 00
+#
+name: Vol_up 3
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 10 00 00 00
+#
+name: Vol_down
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 11 00 00 00
+#
+name: Chnl_prev
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 21 00 00 00
+#
+name: Chnl_next
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 20 00 00 00
+#
+name: Up 4
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 14 00 00 00
+#
+name: Down 4
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 13 00 00 00
+#
+name: Left 3
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 15 00 00 00
+#
+name: Right 3
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 16 00 00 00
+#
+name: Ok 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 35 00 00 00
+#
+name: Menu 3
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 30 00 00 00
+#
+name: Home 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 2E 00 00 00
+#
+name: Return
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 0A 00 00 00
+#
+name: Exit 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 25 00 00 00
+#
+name: Netflix 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 27 00 00 00
+#
+name: Youtube
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 29 00 00 00
+#
+name: Prime_video 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 3E 00 00 00
+#
+name: Google_play
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 2C 00 00 00
+#
+name: 1 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 01 00 00 00
+#
+name: 2 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 02 00 00 00
+#
+name: 3 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 03 00 00 00
+#
+name: 4 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 04 00 00 00
+#
+name: 5 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 05 00 00 00
+#
+name: 6 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 06 00 00 00
+#
+name: 7 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 07 00 00 00
+#
+name: 9 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 09 00 00 00
+#
+name: 0 2
+type: parsed
+protocol: RC5
+address: 01 00 00 00
+command: 00 00 00 00
+#
+name: Tv_dvd
+type: parsed
+protocol: NECext
+address: 45 BC 00 00
+command: B3 4C 00 00
+#
+name: Eject
+type: parsed
+protocol: NEC
+address: 45 00 00 00
+command: F5 00 00 00
+#
+name: Jump
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 9B 00 00 00
+#
+name: Subtitle
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 87 00 00 00
+#
+name: Audio_select
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 53 00 00 00
+#
+name: Up 5
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 80 00 00 00
+#
+name: Left 4
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 51 00 00 00
+#
+name: Right 4
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 4D 00 00 00
+#
+name: Down 5
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 81 00 00 00
+#
+name: Enter 2
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 4E 00 00 00
+#
+name: Menu_setup
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 0E 00 00 00
+#
+name: Exit_cancel
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: EF 00 00 00
+#
+name: Pause 2
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 10 00 00 00
+#
+name: Play 3
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 15 00 00 00
+#
+name: Stop 3
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 14 00 00 00
+#
+name: Skip_fwd
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 57 00 00 00
+#
+name: Rev
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 19 00 00 00
+#
+name: Ff
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 13 00 00 00
+#
+name: Slow_bk
+type: parsed
+protocol: NEC
+address: 45 00 00 00
+command: 0E 00 00 00
+#
+name: Slow_fwd
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 0D 00 00 00
+#
+name: Angle
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 96 00 00 00
+#
+name: Marker
+type: parsed
+protocol: NEC
+address: 45 00 00 00
+command: EC 00 00 00
+#
+name: Top_menu
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: DF 00 00 00
+#
+name: Return 2
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 5D 00 00 00
+#
+name: Repeat_a_b
+type: parsed
+protocol: NEC
+address: 44 00 00 00
+command: 5C 00 00 00
+#
+name: Game
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 28 00 00 00
+#
+name: Pic_size
+type: parsed
+protocol: NEC
+address: 40 00 00 00
+command: 59 00 00 00
+#
+name: Enter 3
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 4A B5 00 00
+#
+name: Up 6
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 48 B7 00 00
+#
+name: Left 5
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 4E B1 00 00
+#
+name: Home 3
+type: parsed
+protocol: NECext
+address: 02 7D 00 00
+command: 9F 60 00 00

@@ -17,3 +17,6 @@ Controls on the Plus2: A = OK (hold = long OK), B tap = Down, B hold = Up, Power
 
 `firmware/plus2.patch` -- App Store, Games menu and AC On changes, applied by CI to
 trollmaster419/Flipper-Zero-ESP32-Port; the built firmware lands in `docs/firmware/` for the flasher.
+
+`infrared/TVs`, `infrared/Projectors` -- one full remote per brand from Flipper-IRDB (CC0), built by
+`tools/ir_remotes.py`; shown in Infrared > Saved Remotes after Update SD.

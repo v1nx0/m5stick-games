@@ -1,0 +1,21 @@
+Filetype: IR signals file
+Version: 1
+# Projectors/SAKAWA - Lucaslhm/Flipper-IRDB (CC0), all models merged
+#
+name: Power
+type: parsed
+protocol: NECext
+address: FF FF 00 00
+command: E8 17 00 00
+#
+name: Vol_up
+type: parsed
+protocol: NECext
+address: FF FF 00 00
+command: BD 42 00 00
+#
+name: Vol_dn
+type: parsed
+protocol: NECext
+address: FF FF 00 00
+command: F2 0D 00 00

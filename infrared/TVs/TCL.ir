@@ -1,0 +1,513 @@
+Filetype: IR signals file
+Version: 1
+# TVs/TCL - Lucaslhm/Flipper-IRDB (CC0), all models merged
+#
+name: Power
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 17 E8 00 00
+#
+name: Vol_up
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 0F F0 00 00
+#
+name: Vol_dn
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 10 EF 00 00
+#
+name: Enter
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 2A D5 00 00
+#
+name: Up
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 19 E6 00 00
+#
+name: Down
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 33 CC 00 00
+#
+name: Right
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 2D D2 00 00
+#
+name: Left
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 1E E1 00 00
+#
+name: Home
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 03 FC 00 00
+#
+name: Exit
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 66 99 00 00
+#
+name: Power 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 54 00 00 00
+#
+name: Input
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: C5 00 00 00
+#
+name: Menu
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 10 00 00 00
+#
+name: List
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 78 00 00 00
+#
+name: Info
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 3C 00 00 00
+#
+name: Back
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: E4 00 00 00
+#
+name: Ok
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 2F 00 00 00
+#
+name: Up 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 9A 00 00 00
+#
+name: Down 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 1A 00 00 00
+#
+name: Left 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 6A 00 00 00
+#
+name: Right 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: EA 00 00 00
+#
+name: Fast_fo
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 38 00 00 00
+#
+name: Fast_ba
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: B8 00 00 00
+#
+name: Play_pa
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: A8 00 00 00
+#
+name: Stop
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: F8 00 00 00
+#
+name: Mute
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: FC 00 00 00
+#
+name: Vol_up 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: F4 00 00 00
+#
+name: Vol_dn 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 74 00 00 00
+#
+name: Ch_next
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: B4 00 00 00
+#
+name: Ch_prev
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 34 00 00 00
+#
+name: Guide
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 58 00 00 00
+#
+name: Exit 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 60 00 00 00
+#
+name: Settings
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: F3 00 00 00
+#
+name: Mystery
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 37 00 00 00
+#
+name: Bookmark
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 86 00 00 00
+#
+name: Tv services
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: FE 00 00 00
+#
+name: Recents
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 3E 00 00 00
+#
+name: Keyboard
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: B3 00 00 00
+#
+name: Netflix
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: F7 00 00 00
+#
+name: YT
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 47 00 00 00
+#
+name: Prime Video
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 83 00 00 00
+#
+name: TCL Channel
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: C7 00 00 00
+#
+name: Assistant
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 3A 00 00 00
+#
+name: Mute 2
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 20 DF 00 00
+#
+name: Instant_replay
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 78 87 00 00
+#
+name: Star
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 61 9E 00 00
+#
+name: Play/pause
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 4C B3 00 00
+#
+name: Rewind
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 34 CB 00 00
+#
+name: Fast-forward
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 55 AA 00 00
+#
+name: Hulu
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 4D B2 00 00
+#
+name: Netflix 2
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 52 AD 00 00
+#
+name: Sling
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 06 F9 00 00
+#
+name: Now
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 6C 93 00 00
+#
+name: 0
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 0C 00 00 00
+#
+name: 1
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 8C 00 00 00
+#
+name: 2
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 4C 00 00 00
+#
+name: 3
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: CC 00 00 00
+#
+name: 4
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 2C 00 00 00
+#
+name: 5
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: AC 00 00 00
+#
+name: 6
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 6C 00 00 00
+#
+name: 7
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: EC 00 00 00
+#
+name: 8
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 1C 00 00 00
+#
+name: 9
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 9C 00 00 00
+#
+name: Language
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: FB 00 00 00
+#
+name: Subtitles
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 01 00 00 00
+#
+name: Red
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 00 00 00 00
+#
+name: Green
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 17 00 00 00
+#
+name: Yellow
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 27 00 00 00
+#
+name: Blue
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 1B 00 00 00
+#
+name: Pause
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 98 00 00 00
+#
+name: Zoom
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 09 00 00 00
+#
+name: Freeview
+type: parsed
+protocol: RCA
+address: 0F 00 00 00
+command: 57 00 00 00
+#
+name: Power 3
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 97 68 00 00
+#
+name: Prime
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 4B B4 00 00
+#
+name: Disney+
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 0C F3 00 00
+#
+name: Espn
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 72 8D 00 00
+#
+name: Roku_channel
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 6E 91 00 00
+#
+name: Youtube
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 56 A9 00 00
+#
+name: Apple_tv
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 77 88 00 00
+#
+name: Right 3
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: AD 52 00 00
+#
+name: Next
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: D5 2A 00 00
+#
+name: Sling 2
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: 86 79 00 00
+#
+name: Direct_TV
+type: parsed
+protocol: NECext
+address: EA C7 00 00
+command: EC 13 00 00
+#
+name: Right 4
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 4013 3982 515 1984 520 1978 515 1983 510 1987 517 982 520 1978 515 983 519 1979 514 983 519 1980 514 1985 519 1979 514 984 518 981 511 988 514 984 518 1980 513 985 517 1981 512 986 516 1982 511 988 514 984 518 981 511
+#
+name: Vol_dn 3
+type: raw
+frequency: 38000
+duty_cycle: 0.330000
+data: 4012 3982 514 1984 519 1979 514 1984 519 1979 514 983 519 980 512 1988 516 982 520 1979 514 1984 519 1978 515 983 519 980 511 987 515 983 519 980 511 1988 516 1982 511 987 515 1983 521 978 514 985 517 981 521 1978 515
