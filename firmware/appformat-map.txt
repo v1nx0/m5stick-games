@@ -2,125 +2,125 @@
 3:esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
 4-                              (esp_app_desc)
 --
-65-esp-idf/log/liblog.a(log_timestamp.c.obj)
-66:                              esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj) (esp_log_timestamp)
-67-esp-idf/log/liblog.a(log_write.c.obj)
+3996-/opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-memcpy.o)
+3997:                              esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj) (memcpy)
+3998-/opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-memset.o)
 --
-69-esp-idf/log/liblog.a(log_level.c.obj)
-70:                              esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj) (esp_log_default_level)
-71-esp-idf/log/liblog.a(tag_log_level.c.obj)
+4197- .literal.esp_app_get_description
+4198:                0x00000000        0x4 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4199- .literal.esp_app_get_elf_sha256
+4200:                0x00000000        0xc esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4201: .text          0x00000000        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4202: .data          0x00000000        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4203: .bss           0x00000000        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4204- .text.esp_app_get_description
+4205:                0x00000000        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4206- .text.esp_app_get_elf_sha256
+4207:                0x00000000       0x44 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4208: .xt.lit        0x00000000       0x20 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4209: .xt.prop       0x00000000      0x15c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+4210- .text          0x00000000        0x0 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-3860-/opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-memcpy.o)
-3861:                              esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj) (memcpy)
-3862-/opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-memset.o)
+64813-LOAD esp-idf/mbedtls/libmbedtls.a
+64814:LOAD esp-idf/esp_app_format/libesp_app_format.a
+64815-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
 --
-4061- .literal.esp_app_get_description
-4062:                0x00000000        0x4 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-4063: .text          0x00000000        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-4064: .data          0x00000000        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-4065: .bss           0x00000000        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-4066- .text.esp_app_get_description
-4067:                0x00000000        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-4068: .xt.lit        0x00000000       0x20 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-4069: .xt.prop       0x00000000      0x168 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-4070- .text          0x00000000        0x0 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
+65006-LOAD esp-idf/mbedtls/libmbedtls.a
+65007:LOAD esp-idf/esp_app_format/libesp_app_format.a
+65008-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
 --
-50637-LOAD esp-idf/mbedtls/libmbedtls.a
-50638:LOAD esp-idf/esp_app_format/libesp_app_format.a
-50639-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+65081-LOAD esp-idf/mbedtls/libmbedtls.a
+65082:LOAD esp-idf/esp_app_format/libesp_app_format.a
+65083-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
 --
-50828-LOAD esp-idf/mbedtls/libmbedtls.a
-50829:LOAD esp-idf/esp_app_format/libesp_app_format.a
-50830-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+65156-LOAD esp-idf/mbedtls/libmbedtls.a
+65157:LOAD esp-idf/esp_app_format/libesp_app_format.a
+65158-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
 --
-50903-LOAD esp-idf/mbedtls/libmbedtls.a
-50904:LOAD esp-idf/esp_app_format/libesp_app_format.a
-50905-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+65231-LOAD esp-idf/mbedtls/libmbedtls.a
+65232:LOAD esp-idf/esp_app_format/libesp_app_format.a
+65233-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
 --
-50978-LOAD esp-idf/mbedtls/libmbedtls.a
-50979:LOAD esp-idf/esp_app_format/libesp_app_format.a
-50980-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+65306-LOAD esp-idf/mbedtls/libmbedtls.a
+65307:LOAD esp-idf/esp_app_format/libesp_app_format.a
+65308-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
 --
-51053-LOAD esp-idf/mbedtls/libmbedtls.a
-51054:LOAD esp-idf/esp_app_format/libesp_app_format.a
-51055-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+74938- .bss.app_elf_sha256_str
+74939:                0x3ffc3dd8        0xa esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+74940-                0x3ffc3dd8                app_elf_sha256_str
 --
-51128-LOAD esp-idf/mbedtls/libmbedtls.a
-51129:LOAD esp-idf/esp_app_format/libesp_app_format.a
-51130-LOAD esp-idf/esp_bootloader_format/libesp_bootloader_format.a
+76785- *(.rodata_desc .rodata_desc.*)
+76786: .rodata_desc   0x3f400020      0x100 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+76787-                0x3f400020                esp_app_desc
 --
-60762- .bss.app_elf_sha256_str
-60763:                0x3ffc3df8        0xa esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-60764-                0x3ffc3df8                app_elf_sha256_str
+99057- .esp_system_init_fn.20
+99058:                0x3f47cd4c        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+99059- .esp_system_init_fn.21
 --
-62579- *(.rodata_desc .rodata_desc.*)
-62580: .rodata_desc   0x3f400020      0x100 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-62581-                0x3f400020                esp_app_desc
+100087- .literal.esp_app_format_init_elf_sha256
+100088:                0x400d0020        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+100089- .literal.__esp_system_init_fn_init_show_app_info
+100090:                0x400d0028        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+100091-                                  0x4 (size before relaxing)
 --
-62589- .rodata.__esp_system_init_fn_init_show_app_info.str1.4
-62590:                0x3f400120    0x4b25e esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-62591-                                 0xee (size before relaxing)
+106411- .text.esp_app_format_init_elf_sha256
+106412:                0x400d4e98       0x5c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+106413- .text.__esp_system_init_fn_init_show_app_info
+106414:                0x400d4ef4        0xa esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+106415-                                  0xd (size before relaxing)
 --
-85262- .esp_system_init_fn.20
-85263:                0x3f485468        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-85264- .esp_system_init_fn.21
+234456- .debug_aranges
+234457:                0x00000000       0x38 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+234458- .debug_aranges
 --
-86045- .literal.esp_app_format_init_elf_sha256
-86046:                0x400d0020        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-86047- .literal.esp_app_get_elf_sha256
-86048:                0x400d0028        0x4 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-86049-                                  0xc (size before relaxing)
-86050- .literal.__esp_system_init_fn_init_show_app_info
-86051:                0x400d002c       0x38 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-86052-                                 0x6c (size before relaxing)
+237915- *(.debug_info .gnu.linkonce.wi.*)
+237916: .debug_info    0x00000000      0x4b2 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+237917- .debug_info    0x000004b2      0x4af esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-92274- .text.esp_app_format_init_elf_sha256
-92275:                0x400d4dec       0x5c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-92276- .text.esp_app_get_elf_sha256
-92277:                0x400d4e48       0x44 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-92278-                0x400d4e48                esp_app_get_elf_sha256
-92279- .text.__esp_system_init_fn_init_show_app_info
-92280:                0x400d4e8c       0xbd esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-92281-                                 0xd5 (size before relaxing)
+239645- *(.debug_abbrev)
+239646: .debug_abbrev  0x00000000      0x22f esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+239647- .debug_abbrev  0x0000022f      0x1fe esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-211880- .debug_aranges
-211881:                0x00000000       0x38 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-211882- .debug_aranges
+241375- *(.debug_line)
+241376: .debug_line    0x00000000      0x538 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+241377- .debug_line    0x00000538      0x423 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-215231- *(.debug_info .gnu.linkonce.wi.*)
-215232: .debug_info    0x00000000      0x708 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-215233- .debug_info    0x00000708      0x6a7 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
+243105- *(.debug_frame)
+243106: .debug_frame   0x00000000       0x70 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+243107- .debug_frame   0x00000070       0x88 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-216907- *(.debug_abbrev)
-216908: .debug_abbrev  0x00000000      0x29f esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-216909- .debug_abbrev  0x0000029f      0x244 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
+244755- *(.debug_str)
+244756: .debug_str     0x00000000   0x194ab4 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+244757-                                0x494 (size before relaxing)
 --
-218583- *(.debug_line)
-218584: .debug_line    0x00000000      0x77e esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-218585- .debug_line    0x0000077e      0x5b5 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
+246482- *(.debug_loc)
+246483: .debug_loc     0x00000000      0x10c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+246484- .debug_loc     0x0000010c       0x38 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-220259- *(.debug_frame)
-220260: .debug_frame   0x00000000       0x70 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-220261- .debug_frame   0x00000070       0x88 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
+247945- *(.debug_ranges)
+247946: .debug_ranges  0x00000000       0x28 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+247947- .debug_ranges  0x00000028       0x30 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-221856- *(.debug_str)
-221857: .debug_str     0x00000000   0x148994 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-221858-                                0x4f5 (size before relaxing)
+250249- *(.comment)
+250250: .comment       0x00000000      0x11d esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+250251-                                 0x30 (size before relaxing)
 --
-223529- *(.debug_loc)
-223530: .debug_loc     0x00000000      0x10c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-223531- .debug_loc     0x0000010c       0x4d esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
+252085- .xtensa.info   0x00000038        0x0 CMakeFiles/furi_esp32.elf.dir/project_elf_src_esp32.c.obj
+252086: .xtensa.info   0x00000038        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+252087- .xtensa.info   0x00000038        0x0 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
-224945- *(.debug_ranges)
-224946: .debug_ranges  0x00000000       0x28 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-224947- .debug_ranges  0x00000028       0x30 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
+267149-                                                  /opt/esp/idf/components/esp_wifi/lib/esp32/libnet80211.a(ieee80211_timer.o)
+267150:app_elf_sha256_str                                esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+267151-                                                  esp-idf/esp_system/libesp_system.a(panic.c.obj)
 --
-227166- *(.comment)
-227167: .comment       0x00000000      0x11d esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-227168-                                 0x30 (size before relaxing)
+274894-                                                  esp-idf/nvs_flash/libnvs_flash.a(nvs_encrypted_partition.cpp.obj)
+274895:esp_app_desc                                      esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+274896:esp_app_get_description                           esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+274897:esp_app_get_elf_sha256                            esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+274898-esp_backtrace_get_next_frame                      esp-idf/esp_system/libesp_system.a(debug_helpers.c.obj)
 --- biggest .rodata input sections ---
- .rodata        0x3f480870      0x414 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfiprintf.o)
- .rodata        0x3f47f9c0      0x398 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libm.a(libm_a-ef_rem_pio2.o)
- .rodata        0x3f481000      0x2f6 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfscanf.o)
- .rodata.K      0x3f479ba0      0x280 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(esp_sha512.c.obj)
- .rodata        0x3f47fe68      0x23c /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-vfprintf.o)
+ .rodata        0x3f4794c8      0x414 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfiprintf.o)
+ .rodata        0x3f478618      0x398 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libm.a(libm_a-ef_rem_pio2.o)
+ .rodata        0x3f479c58      0x2f6 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfscanf.o)
+ .rodata.K      0x3f4747c8      0x280 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(esp_sha512.c.obj)
+ .rodata        0x3f478ac0      0x23c /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-vfprintf.o)
