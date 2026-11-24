@@ -58,10 +58,10 @@ index 15c4b8d..b7f4075 100644
          button_panel,
 diff --git a/applications/main/wlan_app/scenes/scene_app_store.c b/applications/main/wlan_app/scenes/scene_app_store.c
 new file mode 100644
-index 0000000..758196c
+index 0000000..2f2015b
 --- /dev/null
 +++ b/applications/main/wlan_app/scenes/scene_app_store.c
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,149 @@
 +#include "../wlan_app.h"
 +#include "../wlan_sd_update.h"
 +#include <storage/storage.h>
@@ -103,13 +103,10 @@ index 0000000..758196c
 +    for(uint32_t i = 0; wlan_sd_update_catalog_get(app->sd_update, i, rel, sizeof(rel), &size, NULL); i++) {
 +        snprintf(dest, sizeof(dest), "/ext/%s", rel);
 +        bool have = storage_common_stat(storage, dest, NULL) == FSE_OK;
-+        // "* Games/tetris 11k" -- '*' marks already installed; IR packs show as "IR: name"
-+        bool ir = strncmp(rel, "infrared/", 9) == 0;
-+        const char* name = ir ? strrchr(rel, '/') + 1 : rel + 5; // rel is "apps/..." or "infrared/..."
-+        const char* dot = strrchr(name, '.');
++        // "* Games/tetris 11k" -- '*' marks already installed
 +        snprintf(
-+            label, sizeof(label), "%s%s%.*s %luk", have ? "* " : "", ir ? "IR: " : "",
-+            (int)(dot - name), name, (unsigned long)(size / 1024));
++            label, sizeof(label), "%s%.*s %luk", have ? "* " : "", (int)(strlen(rel) - 9),
++            rel + 5, (unsigned long)(size / 1024));
 +        submenu_add_item(app->submenu, label, i, store_item_cb, app);
 +    }
 +    furi_record_close(RECORD_STORAGE);
@@ -199,7 +196,7 @@ index 0000000..758196c
 +            else if(st == StoreFetching)
 +                store_show_list(app);
 +            else
-+                store_msg(app, "Installed", "Apps menu / IR remote"); // games in Apps, IR packs used by Universal remotes
++                store_msg(app, "Installed", "Find it in Apps menu");
 +        } else if(ph == WlanSdUpdateError) {
 +            store_msg(app, "App Store", wlan_sd_update_get_error(app->sd_update));
 +        } else {
@@ -446,7 +443,7 @@ index 349fbad..06ba0d7 100644
      View* view_sd_update;
  
 diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
-index 8a5d7bd..e213305 100644
+index 8a5d7bd..bd559d1 100644
 --- a/applications/main/wlan_app/wlan_sd_update.c
 +++ b/applications/main/wlan_app/wlan_sd_update.c
 @@ -25,6 +25,11 @@
@@ -473,7 +470,77 @@ index 8a5d7bd..e213305 100644
  };
  
  static void sd_update_set_file(WlanSdUpdate* u, const char* name) {
-@@ -449,10 +459,14 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+@@ -352,11 +362,15 @@ static SdTreeEntry* sd_update_parse_manifest(char* manifest, uint32_t* out_count
+ }
+ 
+ // Main sync: fetch the tree, compare with local files, download what's needed.
+-static bool sd_update_sync(WlanSdUpdate* u) {
++// base: server root (m5resources or our repo). prefix: only sync paths starting
++// with it (NULL = everything). *fetched counts files actually downloaded.
++static bool sd_update_sync(WlanSdUpdate* u, const char* base, const char* prefix, uint32_t* fetched) {
+     // Fetch the plain-text manifest (lists every file + size).
+     sd_update_set_file(u, "file list");
+     size_t manifest_len = 0;
+-    char* manifest = sd_update_http_get_alloc(SD_UPDATE_MANIFEST_URL, &manifest_len);
++    char murl[200];
++    snprintf(murl, sizeof(murl), "%s/Manifest", base);
++    char* manifest = sd_update_http_get_alloc(murl, &manifest_len);
+     if(!manifest) {
+         if(!u->cancel) sd_update_fail(u, "Manifest fetch failed");
+         return false;
+@@ -379,7 +393,7 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+ 
+     // Create a single HTTP client for all downloads (TLS session reuse).
+     esp_http_client_config_t cfg;
+-    sd_update_http_cfg(&cfg, SD_UPDATE_RAW_BASE "/version.txt");
++    sd_update_http_cfg(&cfg, murl);
+     esp_http_client_handle_t client = esp_http_client_init(&cfg);
+     bool ok = (client != NULL);
+ 
+@@ -395,6 +409,7 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+         u->done_files = i + 1;
+         u->percent = (uint8_t)((uint64_t)(i + 1) * 100u / count);
+ 
++        if(prefix && strncmp(rel, prefix, strlen(prefix)) != 0) continue;
+         char dest[256];
+         if(!sd_update_safe_dest(rel, dest, sizeof(dest))) continue;
+ 
+@@ -409,9 +424,21 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+         u->speed_kbps = 0;
+ 
+         char url[400];
+-        snprintf(url, sizeof(url), "%s/%s", SD_UPDATE_RAW_BASE, rel);
++        snprintf(url, sizeof(url), "%s/%s", base, rel);
+         FURI_LOG_I(SD_UPDATE_TAG, "fetch %s", rel);
+-        if(!sd_update_download_file(u, client, storage, url, dest)) {
++        // filtered (IR pack) files go via .tmp + rename: a cut-off download must never
++        // replace a working pack, or that remote stops at the truncated last signal
++        char tmp[264];
++        snprintf(tmp, sizeof(tmp), "%s.tmp", dest);
++        const char* target = prefix ? tmp : dest;
++        bool got = sd_update_download_file(u, client, storage, url, target);
++        if(got && prefix) {
++            storage_common_remove(storage, dest);
++            got = storage_common_rename(storage, tmp, dest) == FSE_OK;
++        }
++        if(prefix && !got) storage_common_remove(storage, tmp);
++        if(got && fetched) (*fetched)++;
++        if(!got) {
+             if(u->cancel) {
+                 ok = false;
+                 break;
+@@ -428,8 +455,8 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+     free(entries);
+     free(manifest);
+ 
+-    // Save remote version.txt locally on success.
+-    if(ok && !u->cancel) {
++    // Save remote version.txt locally on success (m5resources only).
++    if(ok && !u->cancel && !prefix) {
+         char ver[64];
+         if(sd_update_http_get_text(SD_UPDATE_VERSION_URL, ver, sizeof(ver))) {
+             File* vf = storage_file_alloc(storage);
+@@ -449,10 +476,14 @@ static bool sd_update_sync(WlanSdUpdate* u) {
  // Worker Task
  // ---------------------------------------------------------------------------
  
@@ -490,10 +557,12 @@ index 8a5d7bd..e213305 100644
  }
  
  static void sd_update_task(void* arg) {
-@@ -461,6 +475,69 @@ static void sd_update_task(void* arg) {
+@@ -461,11 +492,70 @@ static void sd_update_task(void* arg) {
      u->phase = WlanSdUpdateChecking;
      u->percent = 0;
  
+-    if(!u->cancel && sd_update_is_up_to_date()) {
+-        u->phase = WlanSdUpdateUpToDate;
 +    if(u->mode == 1) {
 +        char* all = NULL;
 +        size_t all_len = 0;
@@ -523,9 +592,9 @@ index 8a5d7bd..e213305 100644
 +        } else {
 +            u->phase = WlanSdUpdateIdle;
 +        }
-+        sd_update_finish(u);
-+        return;
-+    }
+         sd_update_finish(u);
+         return;
+     }
 +    if(u->mode == 2) {
 +        u->phase = WlanSdUpdateDownloading;
 +        char dest[256], url[400];
@@ -557,10 +626,29 @@ index 8a5d7bd..e213305 100644
 +        return;
 +    }
 +
-     if(!u->cancel && sd_update_is_up_to_date()) {
-         u->phase = WlanSdUpdateUpToDate;
++    bool up_to_date = !u->cancel && sd_update_is_up_to_date();
+     if(u->cancel) {
+         u->phase = WlanSdUpdateIdle;
          sd_update_finish(u);
-@@ -487,6 +564,14 @@ static void sd_update_task(void* arg) {
+@@ -475,9 +565,15 @@ static void sd_update_task(void* arg) {
+     u->phase = WlanSdUpdateDownloading;
+     u->percent = 0;
+ 
+-    bool ok = sd_update_sync(u);
++    uint32_t fetched = 0;
++    bool ok = up_to_date || sd_update_sync(u, SD_UPDATE_RAW_BASE, NULL, &fetched);
++    // bigger IR code packs (*_plus.ir) from our repo: checked on every update, since
++    // m5resources' version.txt says nothing about them
++    if(ok && !u->cancel) ok = sd_update_sync(u, APP_STORE_OWN_BASE, "infrared/", &fetched);
+ 
+-    if(ok) {
++    if(ok && up_to_date && !fetched) {
++        u->phase = WlanSdUpdateUpToDate;
++    } else if(ok) {
+         u->percent = 100;
+         u->phase = WlanSdUpdateDone;
+     } else if(u->cancel && u->phase != WlanSdUpdateError) {
+@@ -487,6 +583,14 @@ static void sd_update_task(void* arg) {
      sd_update_finish(u);
  }
  
@@ -575,7 +663,7 @@ index 8a5d7bd..e213305 100644
  // ---------------------------------------------------------------------------
  // Public API
  // ---------------------------------------------------------------------------
-@@ -502,6 +587,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -502,6 +606,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
      u->done_files = 0;
      u->total_files = 0;
      u->err[0] = '\0';
@@ -585,7 +673,7 @@ index 8a5d7bd..e213305 100644
      sd_update_set_file(u, "version.txt");
      return u;
  }
-@@ -509,10 +597,67 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -509,10 +616,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
  void wlan_sd_update_free(WlanSdUpdate* u) {
      if(!u) return;
      wlan_sd_update_cancel(u);
@@ -632,11 +720,7 @@ index 8a5d7bd..e213305 100644
 +            const char* path = c2 + 1;
 +            size_t pl = (size_t)(end - path);
 +            bool fap = strncmp(path, "apps/", 5) == 0 && memcmp(end - 4, ".fap", 4) == 0;
-+            // IR code packs only from our own repo (m5resources' .ir files are already
-+            // on the device via Update SD)
-+            bool ir_pack = cur_src > 0 && strncmp(path, "infrared/", 9) == 0 &&
-+                           memcmp(end - 3, ".ir", 3) == 0;
-+            if(pl > 9 && pl < rel_sz && (fap || ir_pack) && n++ == idx) {
++            if(pl > 9 && pl < rel_sz && fap && n++ == idx) {
 +                memcpy(rel, path, pl);
 +                rel[pl] = '\0';
 +                if(size) *size = (uint32_t)strtoul(c1 + 1, NULL, 10);
@@ -653,7 +737,7 @@ index 8a5d7bd..e213305 100644
      if(u->running) return;
      u->cancel = false;
      u->percent = 0;
-@@ -524,17 +669,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
+@@ -524,17 +684,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
      u->phase = WlanSdUpdateChecking;
      u->running = true;
      static StaticTask_t sd_upd_tcb;
@@ -710,7 +794,7 @@ index d94c9e2..489100b 100644
 +void wlan_sd_update_start_mode(WlanSdUpdate* u);
 diff --git a/applications_user/games_menu/application.fam b/applications_user/games_menu/application.fam
 new file mode 100644
-index 0000000..34701d0
+index 0000000..b37cafd
 --- /dev/null
 +++ b/applications_user/games_menu/application.fam
 @@ -0,0 +1,12 @@
@@ -721,41 +805,55 @@ index 0000000..34701d0
 +    entry_point="games_menu_app",
 +    icon="A_Plugins_14",
 +    requires=["gui"],
-+    stack_size=2 * 1024,
++    stack_size=5 * 1024,  # games run in this thread (largest asks 3 KB) + headroom
 +    order=85,
 +    fap_icon="icon_10px.png",
 +    fap_category="Games",
 +)
 diff --git a/applications_user/games_menu/games_menu.c b/applications_user/games_menu/games_menu.c
 new file mode 100644
-index 0000000..aaaa802
+index 0000000..5988b81
 --- /dev/null
 +++ b/applications_user/games_menu/games_menu.c
-@@ -0,0 +1,72 @@
+@@ -0,0 +1,88 @@
 +// Games: lists the built-in game pack (no SD card on M5StickC Plus2, so the
-+// games are compiled into the firmware) and launches the picked one.
++// games are compiled into the firmware) and runs the picked one in this thread.
++// Calling the entry directly: a loader start from inside a running app is
++// rejected ("Loader is locked") because this app still owns the loader.
 +#include <furi.h>
 +#include <gui/gui.h>
 +#include <gui/view_dispatcher.h>
 +#include <gui/modules/submenu.h>
-+#include <loader/loader.h>
++
++extern int32_t snake_game_app(void* p);
++extern int32_t sky_hopper_app(void* p);
++extern int32_t brick_breaker_app(void* p);
++extern int32_t mines_app(void* p);
++extern int32_t tic_tac_toe_app(void* p);
++extern int32_t four_in_a_row_app(void* p);
++extern int32_t merge_tiles_app(void* p);
++extern int32_t pattern_memory_app(void* p);
++extern int32_t reaction_test_app(void* p);
++extern int32_t space_dodge_app(void* p);
++extern int32_t star_shooter_app(void* p);
++extern int32_t hi_lo_app(void* p);
 +
 +static const struct {
 +    const char* name;
-+    const char* appid;
++    int32_t (*entry)(void*);
 +} GAMES[] = {
-+    {"Snake", "snake"},
-+    {"Sky Hopper", "sky_hopper"},
-+    {"Brick Breaker", "brick_breaker"},
-+    {"Mines", "mines"},
-+    {"Tic-Tac-Toe", "tic_tac_toe"},
-+    {"Four in a Row", "four_in_a_row"},
-+    {"Merge Tiles", "merge_tiles"},
-+    {"Pattern Memory", "pattern_memory"},
-+    {"Reaction Test", "reaction_test"},
-+    {"Space Dodge", "space_dodge"},
-+    {"Star Shooter", "star_shooter"},
-+    {"Hi-Lo", "hi_lo"},
++    {"Snake", snake_game_app},
++    {"Sky Hopper", sky_hopper_app},
++    {"Brick Breaker", brick_breaker_app},
++    {"Mines", mines_app},
++    {"Tic-Tac-Toe", tic_tac_toe_app},
++    {"Four in a Row", four_in_a_row_app},
++    {"Merge Tiles", merge_tiles_app},
++    {"Pattern Memory", pattern_memory_app},
++    {"Reaction Test", reaction_test_app},
++    {"Space Dodge", space_dodge_app},
++    {"Star Shooter", star_shooter_app},
++    {"Hi-Lo", hi_lo_app},
 +};
 +
 +typedef struct {
@@ -777,31 +875,33 @@ index 0000000..aaaa802
 +
 +int32_t games_menu_app(void* p) {
 +    UNUSED(p);
-+    GamesMenu m = {.picked = -1};
 +    Gui* gui = furi_record_open(RECORD_GUI);
-+    m.vd = view_dispatcher_alloc();
-+    Submenu* sm = submenu_alloc();
-+    submenu_set_header(sm, "Games");
-+    for(size_t i = 0; i < COUNT_OF(GAMES); i++)
-+        submenu_add_item(sm, GAMES[i].name, i, pick_cb, &m);
-+    view_dispatcher_set_event_callback_context(m.vd, &m);
-+    view_dispatcher_set_navigation_event_callback(m.vd, back_cb);
-+    view_dispatcher_add_view(m.vd, 0, submenu_get_view(sm));
-+    view_dispatcher_attach_to_gui(m.vd, gui, ViewDispatcherTypeFullscreen);
-+    view_dispatcher_switch_to_view(m.vd, 0);
-+    view_dispatcher_run(m.vd);
++    uint32_t last = 0;
++    for(;;) {
++        GamesMenu m = {.picked = -1};
++        m.vd = view_dispatcher_alloc();
++        Submenu* sm = submenu_alloc();
++        submenu_set_header(sm, "Games");
++        for(size_t i = 0; i < COUNT_OF(GAMES); i++)
++            submenu_add_item(sm, GAMES[i].name, i, pick_cb, &m);
++        submenu_set_selected_item(sm, last); // back on the game you just played
++        view_dispatcher_set_event_callback_context(m.vd, &m);
++        view_dispatcher_set_navigation_event_callback(m.vd, back_cb);
++        view_dispatcher_add_view(m.vd, 0, submenu_get_view(sm));
++        view_dispatcher_attach_to_gui(m.vd, gui, ViewDispatcherTypeFullscreen);
++        view_dispatcher_switch_to_view(m.vd, 0);
++        view_dispatcher_run(m.vd);
 +
-+    view_dispatcher_remove_view(m.vd, 0);
-+    submenu_free(sm);
-+    view_dispatcher_free(m.vd);
-+    furi_record_close(RECORD_GUI);
++        // tear the menu down before the game takes the screen
++        view_dispatcher_remove_view(m.vd, 0);
++        submenu_free(sm);
++        view_dispatcher_free(m.vd);
 +
-+    if(m.picked >= 0) {
-+        // deferred: the loader starts the game once this app has exited
-+        Loader* loader = furi_record_open(RECORD_LOADER);
-+        loader_start_detached_with_gui_error(loader, GAMES[m.picked].appid, NULL);
-+        furi_record_close(RECORD_LOADER);
++        if(m.picked < 0) break;
++        last = (uint32_t)m.picked;
++        GAMES[m.picked].entry(NULL);
 +    }
++    furi_record_close(RECORD_GUI);
 +    return 0;
 +}
 diff --git a/applications_user/games_menu/icon_10px.png b/applications_user/games_menu/icon_10px.png

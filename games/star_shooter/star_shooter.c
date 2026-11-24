@@ -92,7 +92,10 @@ static void g_input(G* g, InputEvent* e) {
 }
 
 static void g_draw(Canvas* c, G* g) {
-    canvas_draw_triangle(c, SHIP_X + 4, g->y + 3, 8, 6, CanvasDirectionLeftToRight);
+    // ship from lines: canvas_draw_triangle is not exported to apps on this firmware
+    canvas_draw_line(c, SHIP_X, g->y, SHIP_X + 8, g->y + 3);
+    canvas_draw_line(c, SHIP_X, g->y + 6, SHIP_X + 8, g->y + 3);
+    canvas_draw_line(c, SHIP_X, g->y, SHIP_X, g->y + 6);
     for(int s = 0; s < SHOTS; s++)
         if(g->shot[s]) canvas_draw_line(c, g->sx[s], g->sy[s], g->sx[s] + 3, g->sy[s]);
     for(int i = 0; i < FOES; i++) {

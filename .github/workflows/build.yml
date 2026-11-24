@@ -54,7 +54,11 @@ jobs:
             id=$(basename "$g")
             cat=$(grep -o 'fap_category="[^"]*"' "$g/application.fam" | cut -d'"' -f2)
             mkdir -p "apps/${cat:-Games}"
-            (cd fw && bash ./buildFap.sh "$GITHUB_WORKSPACE/$g")
+            # a FAP calling a function the firmware doesn't export won't load on the stick
+            (cd fw && bash ./buildFap.sh "$GITHUB_WORKSPACE/$g") 2>&1 | tee fap.log
+            if grep -q "missing API symbols" fap.log; then
+              grep -A20 "missing API symbols" fap.log | sed "s/^/::error::$id: /"; exit 1
+            fi
             cp "fw/build_esp32/fap/$id.fap" "apps/${cat:-Games}/"
           done
           python3 tools/make_manifest.py

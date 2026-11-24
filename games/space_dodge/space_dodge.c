@@ -68,7 +68,10 @@ static void g_input(G* g, InputEvent* e) {
 }
 
 static void g_draw(Canvas* c, G* g) {
-    canvas_draw_triangle(c, SHIP_X + 4, g->y + 3, 8, 6, CanvasDirectionLeftToRight);
+    // ship from lines: canvas_draw_triangle is not exported to apps on this firmware
+    canvas_draw_line(c, SHIP_X, g->y, SHIP_X + 8, g->y + 3);
+    canvas_draw_line(c, SHIP_X, g->y + 6, SHIP_X + 8, g->y + 3);
+    canvas_draw_line(c, SHIP_X, g->y, SHIP_X, g->y + 6);
     for(int i = 0; i < ROCKS; i++) canvas_draw_rframe(c, g->rx[i], g->ry[i], g->rs[i], g->rs[i], 1);
     char b[32];
     snprintf(b, sizeof(b), "%lu", (unsigned long)(g->ticks / 10));

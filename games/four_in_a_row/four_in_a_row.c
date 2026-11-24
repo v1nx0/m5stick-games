@@ -125,7 +125,12 @@ static void g_draw(Canvas* c, G* g) {
             else if(g->b[r][k] == 2) canvas_draw_circle(c, x, y, 3);
         }
     if(!g->winner)
-        canvas_draw_triangle(c, ox + g->col * s + 3, oy - 3, 6, 4, CanvasDirectionTopToBottom);
+    {
+        int x = ox + g->col * s + 3; // down arrow from lines: canvas_draw_triangle is not exported to apps
+        canvas_draw_line(c, x - 3, oy - 5, x + 3, oy - 5);
+        canvas_draw_line(c, x - 3, oy - 5, x, oy - 2);
+        canvas_draw_line(c, x + 3, oy - 5, x, oy - 2);
+    }
     char b[32];
     canvas_set_font(c, FontPrimary);
     canvas_draw_str(c, 62, 10, "Four in a Row");
