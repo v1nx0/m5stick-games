@@ -118,10 +118,10 @@ index 15c4b8d..b7f4075 100644
          button_panel,
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
 new file mode 100644
-index 0000000..119ed77
+index 0000000..bbb72f8
 --- /dev/null
 +++ b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
-@@ -0,0 +1,207 @@
+@@ -0,0 +1,293 @@
 +#include "../infrared_app_i.h" // IWYU pragma: keep
 +#include <irac.h>
 +
@@ -135,6 +135,10 @@ index 0000000..119ed77
 +#define AC_EVT_SEND        0x100u
 +#define AC_EVT_OPEN_BRANDS 0x101u
 +#define AC_EVT_BRAND_BASE  0x1000u
++#define AC_EVT_SCAN_START  0x102u
++#define AC_EVT_SCAN_NEXT   0x103u
++#define AC_EVT_SCAN_FOUND  0x104u
++#define AC_SCAN_STEP_MS    2500 // time to see/hear the AC react and press OK
 +#define AC_BRAND_FILE      EXT_PATH("infrared/.ac_brand")
 +#define AC_TEMP_MIN        16
 +#define AC_TEMP_MAX        30
@@ -149,7 +153,10 @@ index 0000000..119ed77
 +    uint8_t power, mode, temp_idx, fan; // indexes into the tables above
 +    bool loaded;
 +    bool picking; // brand list is showing
-+} ac = {0, 0, 0, 24 - AC_TEMP_MIN, 0, false, false};
++    bool scanning; // "Find my AC" is stepping through the brands
++    uint16_t scan_idx;
++} ac = {0, 0, 0, 24 - AC_TEMP_MIN, 0, false, false, false, 0};
++static FuriTimer* ac_scan_timer = NULL;
 +
 +// Saved by NAME: the brand list is generated from the library, so an index could point
 +// at a different brand after an update that adds or reorders entries.
@@ -174,13 +181,13 @@ index 0000000..119ed77
 +    furi_record_close(RECORD_STORAGE);
 +}
 +
-+static void ac_full_send(InfraredApp* infrared) {
++static void ac_full_send_brand(InfraredApp* infrared, uint16_t brand, bool power) {
 +    uint32_t* timings = malloc(sizeof(uint32_t) * AC_MAX_TIMINGS);
 +    size_t n = 0;
 +    uint32_t freq = 0;
 +    bool ok = irac_build(
-+        ac.brand,
-+        ac.power == 0,
++        brand,
++        power,
 +        (IracMode)ac.mode,
 +        (uint8_t)(ac.temp_idx + AC_TEMP_MIN),
 +        (IracFan)ac.fan,
@@ -198,6 +205,10 @@ index 0000000..119ed77
 +        notification_message(infrared->notifications, &sequence_error);
 +    }
 +    free(timings);
++}
++
++static void ac_full_send(InfraredApp* infrared) {
++    ac_full_send_brand(infrared, ac.brand, ac.power == 0);
 +}
 +
 +static void ac_full_set_text(VariableItem* item, AcItem which) {
@@ -255,6 +266,49 @@ index 0000000..119ed77
 +    view_dispatcher_send_custom_event(infrared->view_dispatcher, AC_EVT_BRAND_BASE + index);
 +}
 +
++// --- Find my AC: send the current setting (turned On) with every brand in turn ---
++
++static void ac_scan_tick(void* context) {
++    InfraredApp* infrared = context;
++    view_dispatcher_send_custom_event(infrared->view_dispatcher, AC_EVT_SCAN_NEXT);
++}
++
++static void ac_scan_result(DialogExResult result, void* context) {
++    InfraredApp* infrared = context;
++    if(result == DialogExResultCenter)
++        view_dispatcher_send_custom_event(infrared->view_dispatcher, AC_EVT_SCAN_FOUND);
++}
++
++static void ac_scan_stop(void) {
++    if(ac_scan_timer) {
++        furi_timer_stop(ac_scan_timer);
++        furi_timer_free(ac_scan_timer);
++        ac_scan_timer = NULL;
++    }
++    ac.scanning = false;
++}
++
++// Sends brand scan_idx and shows it; the dialog's OK means "this one worked".
++static void ac_scan_step(InfraredApp* infrared) {
++    static char head[24];
++    DialogEx* d = infrared->dialog_ex;
++    dialog_ex_reset(d);
++    snprintf(head, sizeof(head), "Trying %u/%u", ac.scan_idx + 1, (unsigned)irac_brand_count());
++    dialog_ex_set_header(d, head, 64, 2, AlignCenter, AlignTop);
++    dialog_ex_set_text(d, irac_brand_name(ac.scan_idx), 64, 26, AlignCenter, AlignCenter);
++    dialog_ex_set_center_button_text(d, "Works!");
++    dialog_ex_set_result_callback(d, ac_scan_result);
++    dialog_ex_set_context(d, infrared);
++    view_dispatcher_switch_to_view(infrared->view_dispatcher, InfraredViewDialogEx);
++    ac_full_send_brand(infrared, ac.scan_idx, true);
++}
++
++static void ac_scan_start(void* context, uint32_t index) {
++    InfraredApp* infrared = context;
++    UNUSED(index);
++    view_dispatcher_send_custom_event(infrared->view_dispatcher, AC_EVT_SCAN_START);
++}
++
 +static void ac_full_show_list(InfraredApp* infrared) {
 +    VariableItemList* list = infrared->var_item_list;
 +    variable_item_list_reset(list);
@@ -286,6 +340,7 @@ index 0000000..119ed77
 +    Submenu* submenu = infrared->submenu;
 +    submenu_reset(submenu);
 +    submenu_set_header(submenu, "AC brand");
++    submenu_add_item(submenu, "Find my AC (try all)", 0xFFFF, ac_scan_start, infrared);
 +    for(size_t i = 0; i < irac_brand_count(); i++)
 +        submenu_add_item(submenu, irac_brand_name(i), i, ac_brand_picked, infrared);
 +    submenu_set_selected_item(submenu, ac.brand);
@@ -304,6 +359,11 @@ index 0000000..119ed77
 +
 +bool infrared_scene_universal_ac_full_on_event(void* context, SceneManagerEvent event) {
 +    InfraredApp* infrared = context;
++    if(event.type == SceneManagerEventTypeBack && ac.scanning) {
++        ac_scan_stop(); // Back during the search: stop, back to the brand list
++        ac_full_show_brands(infrared);
++        return true;
++    }
 +    if(event.type == SceneManagerEventTypeBack && ac.picking) {
 +        ac_full_show_list(infrared); // Back in the brand list returns to the settings
 +        return true;
@@ -311,6 +371,30 @@ index 0000000..119ed77
 +    if(event.type != SceneManagerEventTypeCustom) return false;
 +    if(event.event == AC_EVT_SEND) {
 +        if(irac_brand_count()) ac_full_send(infrared);
++    } else if(event.event == AC_EVT_SCAN_START) {
++        if(!irac_brand_count()) return true;
++        ac.picking = false;
++        ac.scanning = true;
++        ac.scan_idx = 0;
++        ac.power = 0; // the search turns the AC on
++        ac_scan_timer = furi_timer_alloc(ac_scan_tick, FuriTimerTypePeriodic, infrared);
++        furi_timer_start(ac_scan_timer, furi_ms_to_ticks(AC_SCAN_STEP_MS));
++        ac_scan_step(infrared);
++    } else if(event.event == AC_EVT_SCAN_NEXT) {
++        if(!ac.scanning) return true;
++        if(ac.scan_idx + 1u >= irac_brand_count()) {
++            ac_scan_stop();
++            ac_full_show_brands(infrared); // tried them all: back to the list
++        } else {
++            ac.scan_idx++;
++            ac_scan_step(infrared);
++        }
++    } else if(event.event == AC_EVT_SCAN_FOUND) {
++        if(!ac.scanning) return true;
++        ac.brand = ac.scan_idx;
++        ac_scan_stop();
++        ac_brand_io(true);
++        ac_full_show_list(infrared);
 +    } else if(event.event == AC_EVT_OPEN_BRANDS) {
 +        if(irac_brand_count()) ac_full_show_brands(infrared);
 +    } else if(event.event >= AC_EVT_BRAND_BASE) {
@@ -327,6 +411,8 @@ index 0000000..119ed77
 +    InfraredApp* infrared = context;
 +    variable_item_list_reset(infrared->var_item_list);
 +    submenu_reset(infrared->submenu);
++    dialog_ex_reset(infrared->dialog_ex);
++    ac_scan_stop();
 +    ac.picking = false;
 +}
 diff --git a/applications/main/wlan_app/scenes/scene_app_store.c b/applications/main/wlan_app/scenes/scene_app_store.c
