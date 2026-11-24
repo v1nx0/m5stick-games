@@ -11,31 +11,276 @@ index 8ebe9bd..f7ff60a 100644
      order=40,
      sources=["*.c", "!infrared_cli.c"],
      resources="resources",
+diff --git a/applications/main/infrared/infrared_app_i.h b/applications/main/infrared/infrared_app_i.h
+index caed2d6..ba7413b 100644
+--- a/applications/main/infrared/infrared_app_i.h
++++ b/applications/main/infrared/infrared_app_i.h
+@@ -347,3 +347,8 @@ void infrared_text_input_callback(void* context);
+  * @param[in,out] context pointer to the user-specified context object.
+  */
+ void infrared_popup_closed_callback(void* context);
++
++/** Find my AC / TV / Projector: ms each brand is tried (Default/Medium/Fast, saved). */
++uint32_t infrared_scan_step_ms(void);
++const char* infrared_scan_speed_name(void);
++void infrared_scan_speed_cycle(void);
+diff --git a/applications/main/infrared/infrared_scan.c b/applications/main/infrared/infrared_scan.c
+new file mode 100644
+index 0000000..9339124
+--- /dev/null
++++ b/applications/main/infrared/infrared_scan.c
+@@ -0,0 +1,47 @@
++// Shared speed for the "Find my AC / TV / Projector" searches: how long each brand
++// is tried before the next one (time to see the device react and press OK).
++#include "infrared_app_i.h"
++
++#define SCAN_SPEED_FILE EXT_PATH("infrared/.scan_speed")
++
++static const char* const SCAN_NAMES[] = {"Default", "Medium", "Fast"};
++static const uint32_t SCAN_STEP_MS[] = {2500, 1500, 800};
++static uint8_t scan_speed = 0;
++static bool scan_loaded = false;
++
++static void infrared_scan_io(bool save) {
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    File* f = storage_file_alloc(storage);
++    if(save) {
++        if(storage_file_open(f, SCAN_SPEED_FILE, FSAM_WRITE, FSOM_CREATE_ALWAYS))
++            storage_file_write(f, &scan_speed, 1);
++    } else if(storage_file_open(f, SCAN_SPEED_FILE, FSAM_READ, FSOM_OPEN_EXISTING)) {
++        uint8_t v = 0;
++        if(storage_file_read(f, &v, 1) == 1 && v < COUNT_OF(SCAN_NAMES)) scan_speed = v;
++    }
++    storage_file_close(f);
++    storage_file_free(f);
++    furi_record_close(RECORD_STORAGE);
++}
++
++static void infrared_scan_load(void) {
++    if(scan_loaded) return;
++    infrared_scan_io(false);
++    scan_loaded = true;
++}
++
++uint32_t infrared_scan_step_ms(void) {
++    infrared_scan_load();
++    return SCAN_STEP_MS[scan_speed];
++}
++
++const char* infrared_scan_speed_name(void) {
++    infrared_scan_load();
++    return SCAN_NAMES[scan_speed];
++}
++
++void infrared_scan_speed_cycle(void) {
++    infrared_scan_load();
++    scan_speed = (uint8_t)((scan_speed + 1) % COUNT_OF(SCAN_NAMES));
++    infrared_scan_io(true);
++}
 diff --git a/applications/main/infrared/scenes/infrared_scene_config.h b/applications/main/infrared/scenes/infrared_scene_config.h
-index 89c03b8..3561f2e 100644
+index 89c03b8..be263e6 100644
 --- a/applications/main/infrared/scenes/infrared_scene_config.h
 +++ b/applications/main/infrared/scenes/infrared_scene_config.h
-@@ -17,6 +17,7 @@ ADD_SCENE(infrared, remote_list, RemoteList)
+@@ -17,6 +17,8 @@ ADD_SCENE(infrared, remote_list, RemoteList)
  ADD_SCENE(infrared, universal, Universal)
  ADD_SCENE(infrared, universal_tv, UniversalTV)
  ADD_SCENE(infrared, universal_ac, UniversalAC)
 +ADD_SCENE(infrared, universal_ac_full, UniversalACFull)
++ADD_SCENE(infrared, find_remote, FindRemote)
  ADD_SCENE(infrared, universal_fan, UniversalFan)
  ADD_SCENE(infrared, universal_audio, UniversalAudio)
  ADD_SCENE(infrared, universal_projector, UniversalProjector)
+diff --git a/applications/main/infrared/scenes/infrared_scene_find_remote.c b/applications/main/infrared/scenes/infrared_scene_find_remote.c
+new file mode 100644
+index 0000000..4796718
+--- /dev/null
++++ b/applications/main/infrared/scenes/infrared_scene_find_remote.c
+@@ -0,0 +1,169 @@
++#include "../infrared_app_i.h" // IWYU pragma: keep
++#include <strings.h> // strcasecmp
++
++// Find my TV / Projector: sends each brand's Power button (full brand remotes in
++// /ext/infrared/TVs or /Projectors, installed by WiFi > Update SD) one after another.
++// OK when the device reacts opens that brand's full remote.
++// Scene state: bit 0 = Projectors (else TVs), bit 4 = remote already opened.
++
++#define FIND_STATE_PROJECTORS 0x01u
++#define FIND_STATE_OPENED     0x10u
++#define FIND_EVT_NEXT         0x200u
++#define FIND_EVT_FOUND        0x201u
++#define FIND_MAX_BRANDS       96
++
++static struct {
++    FuriString* names[FIND_MAX_BRANDS];
++    size_t count, idx;
++    FuriTimer* timer;
++    const char* folder;
++} find;
++
++static void find_tick(void* context) {
++    InfraredApp* infrared = context;
++    view_dispatcher_send_custom_event(infrared->view_dispatcher, FIND_EVT_NEXT);
++}
++
++static void find_result(DialogExResult result, void* context) {
++    InfraredApp* infrared = context;
++    if(result == DialogExResultCenter)
++        view_dispatcher_send_custom_event(infrared->view_dispatcher, FIND_EVT_FOUND);
++}
++
++static void find_stop(void) {
++    if(find.timer) {
++        furi_timer_stop(find.timer);
++        furi_timer_free(find.timer);
++        find.timer = NULL;
++    }
++    for(size_t i = 0; i < find.count; i++) furi_string_free(find.names[i]);
++    find.count = 0;
++}
++
++static void find_path(FuriString* out, size_t i) {
++    furi_string_printf(out, "%s/%s", find.folder, furi_string_get_cstr(find.names[i]));
++}
++
++// Sends the brand file's Power button (first match of the common spellings).
++static void find_send_power(size_t i) {
++    static const char* const NAMES[] = {"Power", "POWER", "power", "Power_on", "On"};
++    FuriString* path = furi_string_alloc();
++    find_path(path, i);
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    FlipperFormat* ff = flipper_format_buffered_file_alloc(storage);
++    InfraredSignal* signal = infrared_signal_alloc();
++    bool sent = false;
++    for(size_t n = 0; n < COUNT_OF(NAMES) && !sent; n++) {
++        if(!flipper_format_buffered_file_open_existing(ff, furi_string_get_cstr(path))) break;
++        if(infrared_signal_search_by_name_and_read(signal, ff, NAMES[n]) == InfraredErrorCodeNone) {
++            infrared_signal_transmit(signal);
++            sent = true;
++        }
++        flipper_format_buffered_file_close(ff);
++    }
++    infrared_signal_free(signal);
++    flipper_format_free(ff);
++    furi_record_close(RECORD_STORAGE);
++    furi_string_free(path);
++}
++
++static void find_step(InfraredApp* infrared) {
++    static char head[24], brand[40];
++    snprintf(head, sizeof(head), "Trying %u/%u", (unsigned)find.idx + 1, (unsigned)find.count);
++    // "Samsung.ir" -> "Samsung"
++    strlcpy(brand, furi_string_get_cstr(find.names[find.idx]), sizeof(brand));
++    char* dot = strrchr(brand, '.');
++    if(dot) *dot = '\0';
++    DialogEx* d = infrared->dialog_ex;
++    dialog_ex_reset(d);
++    dialog_ex_set_header(d, head, 64, 2, AlignCenter, AlignTop);
++    dialog_ex_set_text(d, brand, 64, 26, AlignCenter, AlignCenter);
++    dialog_ex_set_center_button_text(d, "Works!");
++    dialog_ex_set_result_callback(d, find_result);
++    dialog_ex_set_context(d, infrared);
++    view_dispatcher_switch_to_view(infrared->view_dispatcher, InfraredViewDialogEx);
++    find_send_power(find.idx);
++}
++
++static int find_cmp(const void* a, const void* b) {
++    return strcasecmp(
++        furi_string_get_cstr(*(FuriString* const*)a), furi_string_get_cstr(*(FuriString* const*)b));
++}
++
++static void find_list(void) {
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    File* dir = storage_file_alloc(storage);
++    char name[64];
++    FileInfo fi;
++    if(storage_dir_open(dir, find.folder)) {
++        while(find.count < FIND_MAX_BRANDS && storage_dir_read(dir, &fi, name, sizeof(name))) {
++            size_t len = strlen(name);
++            if(!file_info_is_dir(&fi) && len > 3 && !strcasecmp(name + len - 3, ".ir"))
++                find.names[find.count++] = furi_string_alloc_set(name);
++        }
++    }
++    storage_dir_close(dir);
++    storage_file_free(dir);
++    furi_record_close(RECORD_STORAGE);
++    qsort(find.names, find.count, sizeof(find.names[0]), find_cmp);
++}
++
++void infrared_scene_find_remote_on_enter(void* context) {
++    InfraredApp* infrared = context;
++    uint32_t state = scene_manager_get_scene_state(infrared->scene_manager, InfraredSceneFindRemote);
++    if(state & FIND_STATE_OPENED) {
++        // back from the opened remote: leave the search, don't start over
++        scene_manager_previous_scene(infrared->scene_manager);
++        return;
++    }
++    find.folder = (state & FIND_STATE_PROJECTORS) ? EXT_PATH("infrared/Projectors") :
++                                                     EXT_PATH("infrared/TVs");
++    find.count = 0;
++    find.idx = 0;
++    find_list();
++    if(!find.count) {
++        infrared_show_error_message(infrared, "No remotes yet.\nRun WiFi > Update SD");
++        scene_manager_previous_scene(infrared->scene_manager);
++        return;
++    }
++    find.timer = furi_timer_alloc(find_tick, FuriTimerTypePeriodic, infrared);
++    furi_timer_start(find.timer, furi_ms_to_ticks(infrared_scan_step_ms()));
++    find_step(infrared);
++}
++
++bool infrared_scene_find_remote_on_event(void* context, SceneManagerEvent event) {
++    InfraredApp* infrared = context;
++    if(event.type != SceneManagerEventTypeCustom) return false; // Back: default = leave
++    if(event.event == FIND_EVT_NEXT && find.count) {
++        if(find.idx + 1 >= find.count) {
++            scene_manager_previous_scene(infrared->scene_manager); // tried them all
++        } else {
++            find.idx++;
++            find_step(infrared);
++        }
++        return true;
++    }
++    if(event.event == FIND_EVT_FOUND && find.count) {
++        if(find.timer) furi_timer_stop(find.timer);
++        find_path(infrared->file_path, find.idx);
++        if(!INFRARED_ERROR_PRESENT(
++               infrared_remote_load(infrared->remote, furi_string_get_cstr(infrared->file_path)))) {
++            uint32_t state =
++                scene_manager_get_scene_state(infrared->scene_manager, InfraredSceneFindRemote);
++            scene_manager_set_scene_state(
++                infrared->scene_manager, InfraredSceneFindRemote, state | FIND_STATE_OPENED);
++            scene_manager_next_scene(infrared->scene_manager, InfraredSceneRemote);
++        } else {
++            infrared_show_error_message(infrared, "Failed to load\n%s", furi_string_get_cstr(infrared->file_path));
++            scene_manager_previous_scene(infrared->scene_manager);
++        }
++        return true;
++    }
++    return false;
++}
++
++void infrared_scene_find_remote_on_exit(void* context) {
++    InfraredApp* infrared = context;
++    find_stop();
++    dialog_ex_reset(infrared->dialog_ex);
++}
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal.c b/applications/main/infrared/scenes/infrared_scene_universal.c
-index 2a15695..7a06a76 100644
+index 2a15695..27fd25c 100644
 --- a/applications/main/infrared/scenes/infrared_scene_universal.c
 +++ b/applications/main/infrared/scenes/infrared_scene_universal.c
-@@ -7,6 +7,7 @@ typedef enum {
+@@ -7,6 +7,10 @@ typedef enum {
      SubmenuIndexUniversalLEDs,
      SubmenuIndexUniversalFan,
      SubmenuIndexUniversalAirConditioner,
 +    SubmenuIndexUniversalAcFull,
++    SubmenuIndexFindTv,
++    SubmenuIndexFindProjector,
++    SubmenuIndexScanSpeed,
  } SubmenuIndex;
  
  static void infrared_scene_universal_submenu_callback(void* context, uint32_t index) {
-@@ -59,6 +60,12 @@ void infrared_scene_universal_on_enter(void* context) {
+@@ -59,6 +63,26 @@ void infrared_scene_universal_on_enter(void* context) {
          SubmenuIndexUniversalAirConditioner,
          infrared_scene_universal_submenu_callback,
          context);
@@ -45,13 +290,40 @@ index 2a15695..7a06a76 100644
 +        SubmenuIndexUniversalAcFull,
 +        infrared_scene_universal_submenu_callback,
 +        context);
++    submenu_add_item(
++        submenu, "Find my TV", SubmenuIndexFindTv, infrared_scene_universal_submenu_callback, context);
++    submenu_add_item(
++        submenu,
++        "Find my Projector",
++        SubmenuIndexFindProjector,
++        infrared_scene_universal_submenu_callback,
++        context);
++    {
++        char label[32];
++        snprintf(label, sizeof(label), "Scan speed: %s", infrared_scan_speed_name());
++        submenu_add_item(
++            submenu, label, SubmenuIndexScanSpeed, infrared_scene_universal_submenu_callback, context);
++    }
  
      submenu_set_selected_item(
          submenu, scene_manager_get_scene_state(infrared->scene_manager, InfraredSceneUniversal));
-@@ -87,6 +94,9 @@ bool infrared_scene_universal_on_event(void* context, SceneManagerEvent event) {
+@@ -87,6 +111,22 @@ bool infrared_scene_universal_on_event(void* context, SceneManagerEvent event) {
          } else if(event.event == SubmenuIndexUniversalFan) {
              scene_manager_next_scene(scene_manager, InfraredSceneUniversalFan);
              consumed = true;
++        } else if(event.event == SubmenuIndexFindTv || event.event == SubmenuIndexFindProjector) {
++            scene_manager_set_scene_state(
++                scene_manager,
++                InfraredSceneFindRemote,
++                event.event == SubmenuIndexFindProjector ? 1 : 0); // fresh search
++            scene_manager_next_scene(scene_manager, InfraredSceneFindRemote);
++            consumed = true;
++        } else if(event.event == SubmenuIndexScanSpeed) {
++            infrared_scan_speed_cycle(); // Default -> Medium -> Fast, saved
++            char label[32];
++            snprintf(label, sizeof(label), "Scan speed: %s", infrared_scan_speed_name());
++            submenu_change_item_label(infrared->submenu, SubmenuIndexScanSpeed, label);
++            consumed = true;
 +        } else if(event.event == SubmenuIndexUniversalAcFull) {
 +            scene_manager_next_scene(scene_manager, InfraredSceneUniversalACFull);
 +            consumed = true;
@@ -118,10 +390,10 @@ index 15c4b8d..b7f4075 100644
          button_panel,
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
 new file mode 100644
-index 0000000..bbb72f8
+index 0000000..3f695bd
 --- /dev/null
 +++ b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
-@@ -0,0 +1,293 @@
+@@ -0,0 +1,292 @@
 +#include "../infrared_app_i.h" // IWYU pragma: keep
 +#include <irac.h>
 +
@@ -138,7 +410,6 @@ index 0000000..bbb72f8
 +#define AC_EVT_SCAN_START  0x102u
 +#define AC_EVT_SCAN_NEXT   0x103u
 +#define AC_EVT_SCAN_FOUND  0x104u
-+#define AC_SCAN_STEP_MS    2500 // time to see/hear the AC react and press OK
 +#define AC_BRAND_FILE      EXT_PATH("infrared/.ac_brand")
 +#define AC_TEMP_MIN        16
 +#define AC_TEMP_MAX        30
@@ -378,7 +649,7 @@ index 0000000..bbb72f8
 +        ac.scan_idx = 0;
 +        ac.power = 0; // the search turns the AC on
 +        ac_scan_timer = furi_timer_alloc(ac_scan_tick, FuriTimerTypePeriodic, infrared);
-+        furi_timer_start(ac_scan_timer, furi_ms_to_ticks(AC_SCAN_STEP_MS));
++        furi_timer_start(ac_scan_timer, furi_ms_to_ticks(infrared_scan_step_ms()));
 +        ac_scan_step(infrared);
 +    } else if(event.event == AC_EVT_SCAN_NEXT) {
 +        if(!ac.scanning) return true;
