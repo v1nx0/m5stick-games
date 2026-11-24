@@ -1,6 +1,6 @@
 Filetype: IR library file
 Version: 1
-# Projectors: trollmaster419/m5resources + Lucaslhm/Flipper-IRDB (CC0), merged
+# projectors: trollmaster419/m5resources + Lucaslhm/Flipper-IRDB (CC0), merged
 #
 name: Power
 type: parsed

@@ -41,11 +41,13 @@ jobs:
       - name: Build every game as a .fap (for the App Store)
         run: |
           . $IDF_PATH/export.sh
-          rm -rf apps/Games && mkdir -p apps/Games
+          rm -rf apps && mkdir -p apps
           for g in games/*/; do
             id=$(basename "$g")
+            cat=$(grep -o 'fap_category="[^"]*"' "$g/application.fam" | cut -d'"' -f2)
+            mkdir -p "apps/${cat:-Games}"
             (cd fw && bash ./buildFap.sh "$GITHUB_WORKSPACE/$g")
-            cp "fw/build_esp32/fap/$id.fap" apps/Games/
+            cp "fw/build_esp32/fap/$id.fap" "apps/${cat:-Games}/"
           done
           python3 tools/make_manifest.py
 

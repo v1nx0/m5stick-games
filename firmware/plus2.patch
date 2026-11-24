@@ -56,27 +56,6 @@ index 15c4b8d..b7f4075 100644
      infrared_brute_force_add_record(brute_force, i++, "Dh");
      button_panel_add_item(
          button_panel,
-diff --git a/applications/main/infrared/scenes/infrared_scene_universal_projector.c b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
-index ac3f0c3..fefa1e2 100644
---- a/applications/main/infrared/scenes/infrared_scene_universal_projector.c
-+++ b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
-@@ -7,7 +7,15 @@ void infrared_scene_universal_projector_on_enter(void* context) {
-     ButtonPanel* button_panel = infrared->button_panel;
-     InfraredBruteForce* brute_force = infrared->brute_force;
- 
--    infrared_brute_force_set_db_filename(brute_force, EXT_PATH("infrared/assets/projectors.ir"));
-+    // projectors_plus.ir (App Store pack: more brands + Play/Pause) when installed
-+    Storage* storage = furi_record_open(RECORD_STORAGE);
-+    bool plus = storage_common_stat(storage, EXT_PATH("infrared/assets/projectors_plus.ir"), NULL) ==
-+                FSE_OK;
-+    furi_record_close(RECORD_STORAGE);
-+    infrared_brute_force_set_db_filename(
-+        brute_force,
-+        plus ? EXT_PATH("infrared/assets/projectors_plus.ir") :
-+               EXT_PATH("infrared/assets/projectors.ir"));
-     //TODO Improve Projectors universal remote
-     button_panel_reserve(button_panel, 2, 3);
-     uint32_t i = 0;
 diff --git a/applications/main/wlan_app/scenes/scene_app_store.c b/applications/main/wlan_app/scenes/scene_app_store.c
 new file mode 100644
 index 0000000..758196c
@@ -236,48 +215,60 @@ index 0000000..758196c
 +    popup_reset(app->popup);
 +}
 diff --git a/applications/main/wlan_app/scenes/scene_config.h b/applications/main/wlan_app/scenes/scene_config.h
-index e7d7368..13d2e31 100644
+index e7d7368..0d1040c 100644
 --- a/applications/main/wlan_app/scenes/scene_config.h
 +++ b/applications/main/wlan_app/scenes/scene_config.h
-@@ -28,3 +28,4 @@ ADD_SCENE(wlan_app, live_creds, LiveCreds)
+@@ -28,3 +28,5 @@ ADD_SCENE(wlan_app, live_creds, LiveCreds)
  ADD_SCENE(wlan_app, update_sd, UpdateSd)
  ADD_SCENE(wlan_app, smart_deauth, SmartDeauth)
  ADD_SCENE(wlan_app, karma, Karma)
 +ADD_SCENE(wlan_app, app_store, AppStore)
++ADD_SCENE(wlan_app, wol, Wol)
 diff --git a/applications/main/wlan_app/scenes/scene_main.c b/applications/main/wlan_app/scenes/scene_main.c
-index fd14bec..8ecc7d3 100644
+index fd14bec..fcae95e 100644
 --- a/applications/main/wlan_app/scenes/scene_main.c
 +++ b/applications/main/wlan_app/scenes/scene_main.c
-@@ -14,6 +14,7 @@ enum MainIndex {
+@@ -14,6 +14,8 @@ enum MainIndex {
      MainIndexChannelSmartDeauth = 15,
      MainIndexChannelKarma = 16,
      MainIndexChannelSsidSpam = 17,
 +    MainIndexAppStore = 18,
++    MainIndexWol = 19,
  };
  
  static void wlan_app_scene_main_submenu_cb(void* context, uint32_t index) {
-@@ -30,6 +31,7 @@ void wlan_app_scene_main_on_enter(void* context) {
+@@ -30,6 +32,8 @@ void wlan_app_scene_main_on_enter(void* context) {
      app->channel_mode_active = false;
      // Hub-Scene: ein evtl. abgebrochener Update-SD-Flow wird hier zurückgesetzt.
      app->update_sd_flow = false;
 +    app->store_flow = false;
++    app->wol_flow = false;
  
      if(!app->connected && !app->target_selected) {
          submenu_add_item_centered(
-@@ -78,6 +80,9 @@ void wlan_app_scene_main_on_enter(void* context) {
+@@ -78,6 +82,12 @@ void wlan_app_scene_main_on_enter(void* context) {
      submenu_add_item(
          app->submenu, "Update SD", MainIndexUpdateSd,
          wlan_app_scene_main_submenu_cb, app);
 +    submenu_add_item(
 +        app->submenu, "App Store", MainIndexAppStore,
 +        wlan_app_scene_main_submenu_cb, app);
++    submenu_add_item(
++        app->submenu, "Wake-on-LAN", MainIndexWol,
++        wlan_app_scene_main_submenu_cb, app);
  
      view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewSubmenu);
  }
-@@ -156,6 +161,12 @@ bool wlan_app_scene_main_on_event(void* context, SceneManagerEvent event) {
+@@ -156,6 +166,18 @@ bool wlan_app_scene_main_on_event(void* context, SceneManagerEvent event) {
              scene_manager_next_scene(app->scene_manager, WlanAppSceneEvilPortalMenu);
              consumed = true;
              break;
++        case MainIndexWol:
++            app->wol_flow = true;
++            scene_manager_next_scene(
++                app->scene_manager, app->connected ? WlanAppSceneWol : WlanAppSceneConnect);
++            consumed = true;
++            break;
 +        case MainIndexAppStore:
 +            app->store_flow = true;
 +            scene_manager_next_scene(
@@ -288,30 +279,169 @@ index fd14bec..8ecc7d3 100644
              app->update_sd_flow = true;
              if(app->connected) {
 diff --git a/applications/main/wlan_app/scenes/scene_ssid_connect.c b/applications/main/wlan_app/scenes/scene_ssid_connect.c
-index f16634a..372c046 100644
+index f16634a..cab9090 100644
 --- a/applications/main/wlan_app/scenes/scene_ssid_connect.c
 +++ b/applications/main/wlan_app/scenes/scene_ssid_connect.c
-@@ -123,7 +123,9 @@ bool wlan_app_scene_ssid_connect_on_event(void* context, SceneManagerEvent event
+@@ -123,7 +123,11 @@ bool wlan_app_scene_ssid_connect_on_event(void* context, SceneManagerEvent event
              app->connected = true;
              app->target_selected = false;
              app->lan_scan_complete = false;
 -            if(app->update_sd_flow) {
-+            if(app->store_flow) {
++            if(app->wol_flow) {
++                scene_manager_next_scene(app->scene_manager, WlanAppSceneWol);
++            } else if(app->store_flow) {
 +                scene_manager_next_scene(app->scene_manager, WlanAppSceneAppStore);
 +            } else if(app->update_sd_flow) {
                  // Update-SD-Flow braucht keinen ARP-Scan → direkt zur
                  // Bestätigung/Download-Scene.
                  scene_manager_next_scene(app->scene_manager, WlanAppSceneUpdateSd);
+diff --git a/applications/main/wlan_app/scenes/scene_wol.c b/applications/main/wlan_app/scenes/scene_wol.c
+new file mode 100644
+index 0000000..e1cb06d
+--- /dev/null
++++ b/applications/main/wlan_app/scenes/scene_wol.c
+@@ -0,0 +1,129 @@
++#include "../wlan_app.h"
++#include <storage/storage.h>
++#include <lwip/sockets.h>
++
++// Wake-on-LAN: type the PC's MAC once (saved), send the magic packet as a UDP
++// broadcast on ports 9 and 7. Needs a WiFi connection on the PC's network.
++#define WOL_FILE EXT_PATH("apps_data/wol_mac.txt")
++#define WOL_EVT_ENTERED 0x5100u
++#define WOL_EVT_DONE 0x5101u
++
++static char wol_buf[24];
++
++static void wol_entered_cb(void* ctx) {
++    WlanApp* app = ctx;
++    view_dispatcher_send_custom_event(app->view_dispatcher, WOL_EVT_ENTERED);
++}
++
++static void wol_popup_cb(void* ctx) {
++    WlanApp* app = ctx;
++    view_dispatcher_send_custom_event(app->view_dispatcher, WOL_EVT_DONE);
++}
++
++// Accepts AA:BB:CC:DD:EE:FF, AA-BB-..., or 12 bare hex digits.
++static bool wol_parse(const char* s, uint8_t mac[6]) {
++    int n = 0, half = -1;
++    for(; *s && n < 6; s++) {
++        int v = (*s >= '0' && *s <= '9') ? *s - '0' :
++                (*s >= 'a' && *s <= 'f') ? *s - 'a' + 10 :
++                (*s >= 'A' && *s <= 'F') ? *s - 'A' + 10 :
++                                           -1;
++        if(v < 0) {
++            if(*s != ':' && *s != '-' && *s != ' ') return false;
++            continue;
++        }
++        if(half < 0) {
++            half = v;
++        } else {
++            mac[n++] = (uint8_t)(half << 4 | v);
++            half = -1;
++        }
++    }
++    return n == 6 && half < 0 && !*s;
++}
++
++static bool wol_send(const uint8_t mac[6]) {
++    uint8_t pkt[102];
++    memset(pkt, 0xFF, 6);
++    for(int i = 1; i <= 16; i++) memcpy(pkt + i * 6, mac, 6);
++    int sock = lwip_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
++    if(sock < 0) return false;
++    int yes = 1;
++    lwip_setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes));
++    bool ok = false;
++    const uint16_t ports[] = {9, 7};
++    for(int i = 0; i < 2; i++) {
++        struct sockaddr_in to = {.sin_family = AF_INET, .sin_port = htons(ports[i])};
++        to.sin_addr.s_addr = htonl(INADDR_BROADCAST);
++        for(int r = 0; r < 3; r++) // UDP is lossy over WiFi; NICs ignore duplicates
++            ok |= lwip_sendto(sock, pkt, sizeof(pkt), 0, (struct sockaddr*)&to, sizeof(to)) ==
++                  (int)sizeof(pkt);
++    }
++    lwip_close(sock);
++    return ok;
++}
++
++static void wol_file(bool save) {
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    File* f = storage_file_alloc(storage);
++    if(save) {
++        storage_common_mkdir(storage, EXT_PATH("apps_data"));
++        if(storage_file_open(f, WOL_FILE, FSAM_WRITE, FSOM_CREATE_ALWAYS))
++            storage_file_write(f, wol_buf, strlen(wol_buf));
++    } else if(storage_file_open(f, WOL_FILE, FSAM_READ, FSOM_OPEN_EXISTING)) {
++        size_t r = storage_file_read(f, wol_buf, sizeof(wol_buf) - 1);
++        wol_buf[r] = '\0';
++    }
++    storage_file_close(f);
++    storage_file_free(f);
++    furi_record_close(RECORD_STORAGE);
++}
++
++static void wol_popup(WlanApp* app, const char* text) {
++    popup_reset(app->popup);
++    popup_set_header(app->popup, "Wake-on-LAN", 64, 10, AlignCenter, AlignTop);
++    popup_set_text(app->popup, text, 64, 36, AlignCenter, AlignCenter);
++    popup_set_context(app->popup, app);
++    popup_set_callback(app->popup, wol_popup_cb);
++    popup_set_timeout(app->popup, 1800);
++    popup_enable_timeout(app->popup);
++    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewPopup);
++}
++
++void wlan_app_scene_wol_on_enter(void* context) {
++    WlanApp* app = context;
++    app->wol_flow = false;
++    wol_buf[0] = '\0';
++    wol_file(false);
++    text_input_reset(app->text_input);
++    text_input_set_header_text(app->text_input, "PC MAC (AA:BB:CC:DD:EE:FF)");
++    text_input_set_result_callback(
++        app->text_input, wol_entered_cb, app, wol_buf, sizeof(wol_buf), false);
++    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewTextInput);
++}
++
++bool wlan_app_scene_wol_on_event(void* context, SceneManagerEvent event) {
++    WlanApp* app = context;
++    if(event.type != SceneManagerEventTypeCustom) return false;
++    if(event.event == WOL_EVT_ENTERED) {
++        uint8_t mac[6];
++        if(!wol_parse(wol_buf, mac)) {
++            wol_popup(app, "Bad MAC address");
++        } else {
++            wol_file(true);
++            wol_popup(app, wol_send(mac) ? "Magic packet sent!" : "Send failed");
++        }
++        return true;
++    }
++    if(event.event == WOL_EVT_DONE) {
++        scene_manager_search_and_switch_to_previous_scene(app->scene_manager, WlanAppSceneMain);
++        return true;
++    }
++    return false;
++}
++
++void wlan_app_scene_wol_on_exit(void* context) {
++    WlanApp* app = context;
++    text_input_reset(app->text_input);
++    popup_reset(app->popup);
++}
 diff --git a/applications/main/wlan_app/wlan_app.h b/applications/main/wlan_app/wlan_app.h
-index 349fbad..f49702a 100644
+index 349fbad..06ba0d7 100644
 --- a/applications/main/wlan_app/wlan_app.h
 +++ b/applications/main/wlan_app/wlan_app.h
-@@ -237,6 +237,8 @@ struct WlanApp {
+@@ -237,6 +237,10 @@ struct WlanApp {
      // dass scene_ssid_connect nach erfolgreichem Connect zur Update-SD-Scene
      // statt zum ARP-Scan springt. Wird in scene_update_sd konsumiert.
      bool update_sd_flow;
 +    // App Store: like update_sd_flow, routes to the App Store after connect.
 +    bool store_flow;
++    // Wake-on-LAN: routes to the WoL scene after connect.
++    bool wol_flow;
      WlanSdUpdate* sd_update;
      View* view_sd_update;
  
@@ -685,16 +815,452 @@ jq{KhN1_>Va83!IQxNT!Od7;a_0;I#!)z4*}Q$iB}BsCVA
 literal 0
 HcmV?d00001
 
+diff --git a/applications_user/ir_tools/application.fam b/applications_user/ir_tools/application.fam
+new file mode 100644
+index 0000000..2501699
+--- /dev/null
++++ b/applications_user/ir_tools/application.fam
+@@ -0,0 +1,13 @@
++App(
++    appid="ir_tools",
++    name="IR Tools",
++    apptype=FlipperAppType.MENUEXTERNAL,
++    entry_point="ir_tools_app",
++    icon="A_Infrared_14",
++    requires=["gui", "storage", "dialogs"],
++    stack_size=6 * 1024,
++    order=86,
++    sources=["*.c", "../imu/imu_hal.c"],
++    fap_icon="icon_10px.png",
++    fap_category="Infrared",
++)
+diff --git a/applications_user/ir_tools/icon_10px.png b/applications_user/ir_tools/icon_10px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..1ede9a5480c7f74012c85f8f5a45e048561a8898
+GIT binary patch
+literal 87
+zcmeAS@N?(olHy`uVBq!ia0vp^AT}2xkYHHq`AGms$$7dshE&W+PGDekJ65&KormYQ
+jq{KhN1_>Va83!IQxNT!Od7;a_0;I#!)z4*}Q$iB}BsCVA
+
+literal 0
+HcmV?d00001
+
+diff --git a/applications_user/ir_tools/ir_tools.c b/applications_user/ir_tools/ir_tools.c
+new file mode 100644
+index 0000000..6d25168
+--- /dev/null
++++ b/applications_user/ir_tools/ir_tools.c
+@@ -0,0 +1,398 @@
++// IR Tools (M5StickC Plus2): Sleep Timer, Clap Off, Tilt Remote.
++// Built into the firmware: FAPs cannot reach the IR, mic or IMU APIs on this port.
++#include <furi.h>
++#include <gui/gui.h>
++#include <input/input.h>
++#include <dialogs/dialogs.h>
++#include <storage/storage.h>
++#include <flipper_format/flipper_format.h>
++#include <lib/infrared/signal/infrared_brute_force.h>
++#include <lib/infrared/signal/infrared_signal.h>
++#include <driver/i2s_pdm.h>
++#include <math.h>
++#include "../imu/imu_hal.h"
++
++typedef enum { SMain, STarget, STimerSet, STimerRun, SClap, STilt, SMsg } Screen;
++typedef enum { ModeTimer, ModeClap } Mode;
++
++static const char* const MAIN_ITEMS[] = {"Sleep Timer", "Clap Off", "Tilt Remote"};
++static const struct {
++    const char* name;
++    const char* db;
++    const char* button;
++} TARGETS[] = {
++    {"TV", EXT_PATH("infrared/assets/tv.ir"), "Power"},
++    {"AC", EXT_PATH("infrared/assets/ac.ir"), "Off"},
++    {"Projector", EXT_PATH("infrared/assets/projectors.ir"), "Power"},
++    {"Fan", EXT_PATH("infrared/assets/fans.ir"), "Power"},
++    {"Audio", EXT_PATH("infrared/assets/audio.ir"), "Power"},
++};
++#define TARGET_COUNT COUNT_OF(TARGETS)
++// tilt: accel axis -> saved-remote button names (first one found in the file wins)
++static const char* const TILT_BUTTONS[4][3] = {
++    {"Vol_up", "VOL+", "Volume_up"},
++    {"Vol_dn", "VOL-", "Volume_down"},
++    {"Ch_next", "CH+", "Channel_up"},
++    {"Ch_prev", "CH-", "Channel_down"},
++};
++
++typedef struct {
++    FuriMutex* mutex;
++    Screen screen;
++    Mode mode;
++    int sel, target, minutes;
++    uint32_t end_ms;
++    char msg[48];
++    // clap
++    i2s_chan_handle_t mic;
++    int level, claps;
++    uint32_t last_clap, cooldown_until;
++    float baseline;
++    // tilt
++    InfraredSignal* tilt_sig[4];
++    int tilt_dir;
++    uint32_t tilt_next;
++    float ax, ay;
++} App;
++
++static uint32_t now_ms(void) {
++    return (uint32_t)((uint64_t)furi_get_tick() * 1000u / furi_kernel_get_tick_frequency());
++}
++
++static void draw_list(Canvas* c, const char* title, const char* const* items, int n, int sel) {
++    canvas_set_font(c, FontPrimary);
++    canvas_draw_str(c, 2, 10, title);
++    canvas_set_font(c, FontSecondary);
++    int first = sel > 3 ? sel - 3 : 0;
++    for(int i = first; i < n && i < first + 4; i++) {
++        int y = 24 + (i - first) * 11;
++        if(i == sel) {
++            canvas_draw_rbox(c, 0, y - 9, 128, 11, 2);
++            canvas_set_color(c, ColorWhite);
++        }
++        canvas_draw_str(c, 4, y, items[i]);
++        canvas_set_color(c, ColorBlack);
++    }
++}
++
++static void draw_cb(Canvas* c, void* ctx) {
++    App* a = ctx;
++    furi_mutex_acquire(a->mutex, FuriWaitForever);
++    canvas_clear(c);
++    char b[48];
++    switch(a->screen) {
++    case SMain:
++        draw_list(c, "IR Tools", MAIN_ITEMS, 3, a->sel);
++        break;
++    case STarget: {
++        const char* names[TARGET_COUNT];
++        for(size_t i = 0; i < TARGET_COUNT; i++) names[i] = TARGETS[i].name;
++        draw_list(c, a->mode == ModeTimer ? "Timer: turn off" : "Clap: turn off", names, TARGET_COUNT, a->sel);
++        break;
++    }
++    case STimerSet:
++        canvas_set_font(c, FontPrimary);
++        snprintf(b, sizeof(b), "%s off in", TARGETS[a->target].name);
++        canvas_draw_str_aligned(c, 64, 12, AlignCenter, AlignCenter, b);
++        canvas_set_font(c, FontBigNumbers);
++        snprintf(b, sizeof(b), "%d", a->minutes);
++        canvas_draw_str_aligned(c, 64, 34, AlignCenter, AlignCenter, b);
++        canvas_set_font(c, FontSecondary);
++        canvas_draw_str_aligned(c, 64, 56, AlignCenter, AlignCenter, "min  Up/Down  OK=start");
++        break;
++    case STimerRun: {
++        uint32_t left = a->end_ms > now_ms() ? (a->end_ms - now_ms()) / 1000 : 0;
++        canvas_set_font(c, FontPrimary);
++        snprintf(b, sizeof(b), "%s off in", TARGETS[a->target].name);
++        canvas_draw_str_aligned(c, 64, 12, AlignCenter, AlignCenter, b);
++        canvas_set_font(c, FontBigNumbers);
++        snprintf(b, sizeof(b), "%lu:%02lu", (unsigned long)(left / 60), (unsigned long)(left % 60));
++        canvas_draw_str_aligned(c, 64, 34, AlignCenter, AlignCenter, b);
++        canvas_set_font(c, FontSecondary);
++        canvas_draw_str_aligned(c, 64, 56, AlignCenter, AlignCenter, "Back = cancel");
++        break;
++    }
++    case SClap:
++        canvas_set_font(c, FontPrimary);
++        snprintf(b, sizeof(b), "Clap twice: %s off", TARGETS[a->target].name);
++        canvas_draw_str_aligned(c, 64, 10, AlignCenter, AlignCenter, b);
++        canvas_draw_frame(c, 4, 24, 120, 10);
++        canvas_draw_box(c, 4, 24, a->level * 120 / 100, 10);
++        canvas_set_font(c, FontSecondary);
++        canvas_draw_str_aligned(c, 64, 46, AlignCenter, AlignCenter, a->mic ? "Listening..." : "Mic not available");
++        canvas_draw_str_aligned(c, 64, 58, AlignCenter, AlignCenter, "Back = stop");
++        break;
++    case STilt:
++        canvas_set_font(c, FontPrimary);
++        canvas_draw_str_aligned(c, 64, 10, AlignCenter, AlignCenter, "Tilt Remote");
++        canvas_set_font(c, FontSecondary);
++        canvas_draw_str_aligned(c, 64, 24, AlignCenter, AlignCenter, "Tilt L/R: volume");
++        canvas_draw_str_aligned(c, 64, 34, AlignCenter, AlignCenter, "Tilt fwd/back: channel");
++        canvas_draw_circle(c, 64, 50, 7);
++        canvas_draw_disc(c, 64 + (int)(a->ax * 7), 50 + (int)(a->ay * 7), 2);
++        break;
++    case SMsg:
++        canvas_set_font(c, FontPrimary);
++        canvas_draw_str_aligned(c, 64, 28, AlignCenter, AlignCenter, a->msg);
++        canvas_set_font(c, FontSecondary);
++        canvas_draw_str_aligned(c, 64, 50, AlignCenter, AlignCenter, "OK / Back");
++        break;
++    }
++    furi_mutex_release(a->mutex);
++}
++
++static void input_cb(InputEvent* e, void* ctx) {
++    furi_message_queue_put(ctx, e, 0);
++}
++
++static void set_msg(App* a, const char* m) {
++    strlcpy(a->msg, m, sizeof(a->msg));
++    a->screen = SMsg;
++}
++
++// Sends the target's power/off button for every brand in the universal DB.
++// Returns false if Back was pressed. Runs in the app thread (blocking by design).
++static bool send_universal(App* a, ViewPort* vp, FuriMessageQueue* q) {
++    InfraredBruteForce* bf = infrared_brute_force_alloc();
++    infrared_brute_force_set_db_filename(bf, TARGETS[a->target].db);
++    infrared_brute_force_add_record(bf, 0, TARGETS[a->target].button);
++    uint32_t count = 0;
++    bool done = true;
++    if(infrared_brute_force_calculate_messages(bf) != InfraredErrorCodeNone ||
++       !infrared_brute_force_start(bf, 0, &count)) {
++        furi_mutex_acquire(a->mutex, FuriWaitForever);
++        set_msg(a, "No IR codes on stick");
++        furi_mutex_release(a->mutex);
++        infrared_brute_force_free(bf);
++        return true;
++    }
++    for(uint32_t i = 0; i < count; i++) {
++        InputEvent e;
++        if(furi_message_queue_get(q, &e, 0) == FuriStatusOk && e.key == InputKeyBack &&
++           e.type == InputTypeShort) {
++            done = false;
++            break;
++        }
++        furi_mutex_acquire(a->mutex, FuriWaitForever);
++        snprintf(a->msg, sizeof(a->msg), "Sending %lu/%lu", (unsigned long)i + 1, (unsigned long)count);
++        a->screen = SMsg;
++        furi_mutex_release(a->mutex);
++        view_port_update(vp);
++        infrared_brute_force_send(bf, i);
++    }
++    infrared_brute_force_stop(bf);
++    infrared_brute_force_free(bf);
++    furi_mutex_acquire(a->mutex, FuriWaitForever);
++    set_msg(a, done ? "Sent!" : "Stopped");
++    furi_mutex_release(a->mutex);
++    return done;
++}
++
++static void mic_start(App* a) {
++    i2s_chan_config_t cc = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
++    if(i2s_new_channel(&cc, NULL, &a->mic) != ESP_OK) {
++        a->mic = NULL;
++        return;
++    }
++    // M5StickC Plus2 SPM1423 PDM mic: CLK G0, DATA G34 (G0 is shared with a CC1101 SCK)
++    i2s_pdm_rx_config_t pc = {
++        .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(16000),
++        .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
++        .gpio_cfg = {.clk = GPIO_NUM_0, .din = GPIO_NUM_34},
++    };
++    if(i2s_channel_init_pdm_rx_mode(a->mic, &pc) != ESP_OK || i2s_channel_enable(a->mic) != ESP_OK) {
++        i2s_del_channel(a->mic);
++        a->mic = NULL;
++    }
++    a->baseline = 500;
++    a->claps = 0;
++}
++
++static void mic_stop(App* a) {
++    if(!a->mic) return;
++    i2s_channel_disable(a->mic);
++    i2s_del_channel(a->mic);
++    a->mic = NULL;
++}
++
++// One mic chunk (~32 ms). Returns true on a double clap.
++static bool mic_poll(App* a) {
++    int16_t buf[512];
++    size_t got = 0;
++    if(!a->mic || i2s_channel_read(a->mic, buf, sizeof(buf), &got, 50) != ESP_OK) return false;
++    int peak = 0;
++    for(size_t i = 0; i < got / 2; i++) peak = MAX(peak, abs(buf[i]));
++    a->level = MIN(100, peak * 100 / 20000);
++    uint32_t t = now_ms();
++    bool loud = peak > 6000 && peak > a->baseline * 6;
++    if(!loud) a->baseline = a->baseline * 0.95f + peak * 0.05f; // tracks room noise
++    if(!loud || t < a->cooldown_until || t - a->last_clap < 120) return false;
++    a->claps = (a->claps && t - a->last_clap < 800) ? a->claps + 1 : 1;
++    a->last_clap = t;
++    if(a->claps < 2) return false;
++    a->claps = 0;
++    a->cooldown_until = t + 3000;
++    return true;
++}
++
++static bool tilt_load(App* a) {
++    DialogsApp* dialogs = furi_record_open(RECORD_DIALOGS);
++    FuriString* path = furi_string_alloc_set(EXT_PATH("infrared"));
++    DialogsFileBrowserOptions opt;
++    dialog_file_browser_set_basic_options(&opt, ".ir", NULL);
++    opt.base_path = EXT_PATH("infrared");
++    bool picked = dialog_file_browser_show(dialogs, path, path, &opt);
++    furi_record_close(RECORD_DIALOGS);
++    int found = 0;
++    if(picked) {
++        Storage* storage = furi_record_open(RECORD_STORAGE);
++        FlipperFormat* ff = flipper_format_buffered_file_alloc(storage);
++        for(int d = 0; d < 4; d++) {
++            for(int n = 0; n < 3 && !a->tilt_sig[d]; n++) {
++                if(!flipper_format_buffered_file_open_existing(ff, furi_string_get_cstr(path))) break;
++                InfraredSignal* s = infrared_signal_alloc();
++                if(infrared_signal_search_by_name_and_read(s, ff, TILT_BUTTONS[d][n]) ==
++                   InfraredErrorCodeNone)
++                    a->tilt_sig[d] = s, found++;
++                else
++                    infrared_signal_free(s);
++                flipper_format_buffered_file_close(ff);
++            }
++        }
++        flipper_format_free(ff);
++        furi_record_close(RECORD_STORAGE);
++    }
++    furi_string_free(path);
++    if(picked && !found) set_msg(a, "No Vol/Ch buttons");
++    return picked && found;
++}
++
++static void tilt_free(App* a) {
++    for(int d = 0; d < 4; d++)
++        if(a->tilt_sig[d]) infrared_signal_free(a->tilt_sig[d]), a->tilt_sig[d] = NULL;
++}
++
++// 0 vol up, 1 vol down, 2 ch next, 3 ch prev, -1 level
++static int tilt_dir(float ax, float ay) {
++    if(fabsf(ax) > 0.55f && fabsf(ax) >= fabsf(ay)) return ax > 0 ? 0 : 1;
++    if(fabsf(ay) > 0.55f) return ay < 0 ? 2 : 3;
++    return -1;
++}
++
++int32_t ir_tools_app(void* p) {
++    UNUSED(p);
++    App* a = malloc(sizeof(App));
++    memset(a, 0, sizeof(App));
++    a->mutex = furi_mutex_alloc(FuriMutexTypeNormal);
++    a->minutes = 30;
++    FuriMessageQueue* q = furi_message_queue_alloc(16, sizeof(InputEvent));
++    ViewPort* vp = view_port_alloc();
++    view_port_draw_callback_set(vp, draw_cb, a);
++    view_port_input_callback_set(vp, input_cb, q);
++    Gui* gui = furi_record_open(RECORD_GUI);
++    gui_add_view_port(gui, vp, GuiLayerFullscreen);
++
++    for(bool run = true; run;) {
++        InputEvent e;
++        bool got = furi_message_queue_get(q, &e, (a->screen == SClap && a->mic) ? 0 : 50) == FuriStatusOk;
++        bool step = got && (e.type == InputTypePress || e.type == InputTypeRepeat);
++        bool ok = got && e.key == InputKeyOk && e.type == InputTypeShort;
++        bool back = got && e.key == InputKeyBack && e.type == InputTypeShort;
++        int d = !step ? 0 : (e.key == InputKeyUp || e.key == InputKeyLeft) ? -1 :
++                (e.key == InputKeyDown || e.key == InputKeyRight)            ? 1 :
++                                                                               0;
++        bool fire = false;
++        furi_mutex_acquire(a->mutex, FuriWaitForever);
++        switch(a->screen) {
++        case SMain:
++            a->sel = (a->sel + d + 3) % 3;
++            if(back) run = false;
++            if(ok && a->sel == 2) {
++                furi_mutex_release(a->mutex);
++                bool loaded = tilt_load(a);
++                furi_mutex_acquire(a->mutex, FuriWaitForever);
++                if(loaded) {
++                    imu_init();
++                    a->screen = STilt;
++                    a->tilt_dir = -1;
++                }
++            } else if(ok) {
++                a->mode = a->sel == 0 ? ModeTimer : ModeClap;
++                a->screen = STarget;
++                a->sel = 0;
++            }
++            break;
++        case STarget:
++            a->sel = (a->sel + d + (int)TARGET_COUNT) % (int)TARGET_COUNT;
++            if(back) a->screen = SMain, a->sel = 0;
++            if(ok) {
++                a->target = a->sel;
++                if(a->mode == ModeTimer) {
++                    a->screen = STimerSet;
++                } else {
++                    mic_start(a);
++                    a->screen = SClap;
++                }
++            }
++            break;
++        case STimerSet:
++            a->minutes = CLAMP(a->minutes - d * (a->minutes >= 60 ? 5 : 1), 180, 1); // Up = more
++            if(back) a->screen = STarget;
++            if(ok) a->end_ms = now_ms() + (uint32_t)a->minutes * 60000u, a->screen = STimerRun;
++            break;
++        case STimerRun:
++            if(back) a->screen = STimerSet;
++            else if(now_ms() >= a->end_ms) fire = true;
++            break;
++        case SClap:
++            if(back) mic_stop(a), a->screen = STarget;
++            break;
++        case STilt:
++            if(back) imu_deinit(), tilt_free(a), a->screen = SMain;
++            break;
++        case SMsg:
++            if(ok || back) a->screen = SMain, a->sel = 0;
++            break;
++        }
++        Screen scr = a->screen;
++        furi_mutex_release(a->mutex);
++
++        if(fire) {
++            send_universal(a, vp, q);
++        } else if(scr == SClap && mic_poll(a)) {
++            mic_stop(a); // free G0/I2S while the IR LED blasts, then listen again
++            send_universal(a, vp, q);
++            furi_mutex_acquire(a->mutex, FuriWaitForever);
++            if(a->screen == SMsg) a->screen = SClap;
++            furi_mutex_release(a->mutex);
++            mic_start(a);
++        } else if(scr == STilt) {
++            ImuData imu;
++            if(imu_read(&imu)) {
++                int dir = tilt_dir(imu.accel_x, imu.accel_y);
++                furi_mutex_acquire(a->mutex, FuriWaitForever);
++                a->ax = CLAMP(imu.accel_x, 1.0f, -1.0f);
++                a->ay = CLAMP(imu.accel_y, 1.0f, -1.0f);
++                bool send = dir >= 0 && a->tilt_sig[dir] &&
++                            (dir != a->tilt_dir || now_ms() >= a->tilt_next);
++                if(send) a->tilt_next = now_ms() + 450; // held tilt repeats ~2x/s
++                a->tilt_dir = dir;
++                furi_mutex_release(a->mutex);
++                if(send) infrared_signal_transmit(a->tilt_sig[dir]);
++            }
++        }
++        view_port_update(vp);
++    }
++
++    mic_stop(a);
++    imu_deinit(); // no-op unless Tilt was open
++    tilt_free(a);
++    view_port_enabled_set(vp, false);
++    gui_remove_view_port(gui, vp);
++    furi_record_close(RECORD_GUI);
++    view_port_free(vp);
++    furi_message_queue_free(q);
++    furi_mutex_free(a->mutex);
++    free(a);
++    return 0;
++}
 diff --git a/fam_config.py b/fam_config.py
-index 36c143f..6e4de07 100644
+index 36c143f..dfdc345 100644
 --- a/fam_config.py
 +++ b/fam_config.py
-@@ -78,6 +78,20 @@ APPS = [
+@@ -78,6 +78,22 @@ APPS = [
      "js_infrared",
      "js_blebeacon",
      "qflipper_app",
 +    # game pack (built in: no SD card for FAPs on M5StickC Plus2)
 +    "games_menu",
++    "ir_tools",
++    "hid_ble",  # Bluetooth Remote: presentation clicker, media keys, mouse
 +    "snake",
 +    "sky_hopper",
 +    "brick_breaker",
@@ -711,10 +1277,61 @@ index 36c143f..6e4de07 100644
  ]
  
 diff --git a/lib/infrared/signal/infrared_brute_force.c b/lib/infrared/signal/infrared_brute_force.c
-index 519bbbb..ace2ec3 100644
+index 519bbbb..63a2cc1 100644
 --- a/lib/infrared/signal/infrared_brute_force.c
 +++ b/lib/infrared/signal/infrared_brute_force.c
-@@ -97,6 +97,7 @@ InfraredErrorCode infrared_brute_force_calculate_messages(InfraredBruteForce* br
+@@ -1,6 +1,8 @@
+ #include "infrared_brute_force.h"
+ 
+ #include <stdlib.h>
++#include <string.h>
++#include <storage/storage.h>
+ #include <m-dict.h>
+ #include <m-array.h>
+ #include <flipper_format/flipper_format.h>
+@@ -55,6 +57,7 @@ DICT_DEF2(
+ struct InfraredBruteForce {
+     FlipperFormat* ff;
+     const char* db_filename;
++    FuriString* plus_filename; // "<db>_plus.ir" when that App Store pack is installed
+     FuriString* current_record_name;
+     InfraredBruteForceRecord current_record;
+     InfraredSignal* current_signal;
+@@ -69,6 +72,7 @@ InfraredBruteForce* infrared_brute_force_alloc(void) {
+     brute_force->current_signal = NULL;
+     brute_force->is_started = false;
+     brute_force->current_record_name = furi_string_alloc();
++    brute_force->plus_filename = furi_string_alloc();
+     InfraredBruteForceRecordDict_init(brute_force->records);
+     return brute_force;
+ }
+@@ -78,6 +82,7 @@ void infrared_brute_force_free(InfraredBruteForce* brute_force) {
+     furi_assert(!brute_force->is_started);
+     InfraredBruteForceRecordDict_clear(brute_force->records);
+     furi_string_free(brute_force->current_record_name);
++    furi_string_free(brute_force->plus_filename);
+     free(brute_force);
+ }
+ 
+@@ -85,6 +90,17 @@ void infrared_brute_force_set_db_filename(InfraredBruteForce* brute_force, const
+     furi_check(brute_force);
+     furi_assert(!brute_force->is_started);
+     brute_force->db_filename = db_filename;
++    // prefer foo_plus.ir (bigger merged code pack from the App Store) over foo.ir
++    size_t len = strlen(db_filename);
++    if(len > 3 && strcmp(db_filename + len - 3, ".ir") == 0) {
++        furi_string_set_strn(brute_force->plus_filename, db_filename, len - 3);
++        furi_string_cat_str(brute_force->plus_filename, "_plus.ir");
++        Storage* storage = furi_record_open(RECORD_STORAGE);
++        if(storage_common_stat(storage, furi_string_get_cstr(brute_force->plus_filename), NULL) ==
++           FSE_OK)
++            brute_force->db_filename = furi_string_get_cstr(brute_force->plus_filename);
++        furi_record_close(RECORD_STORAGE);
++    }
+ }
+ 
+ InfraredErrorCode infrared_brute_force_calculate_messages(InfraredBruteForce* brute_force) {
+@@ -97,6 +113,7 @@ InfraredErrorCode infrared_brute_force_calculate_messages(InfraredBruteForce* br
      FlipperFormat* ff = flipper_format_buffered_file_alloc(storage);
      FuriString* signal_name = furi_string_alloc();
      InfraredSignal* signal = infrared_signal_alloc();
@@ -722,7 +1339,7 @@ index 519bbbb..ace2ec3 100644
  
      do {
          if(!flipper_format_buffered_file_open_existing(ff, brute_force->db_filename)) {
-@@ -113,14 +114,21 @@ InfraredErrorCode infrared_brute_force_calculate_messages(InfraredBruteForce* br
+@@ -113,14 +130,21 @@ InfraredErrorCode infrared_brute_force_calculate_messages(InfraredBruteForce* br
  
              InfraredBruteForceRecord* record =
                  InfraredBruteForceRecordDict_get(brute_force->records, signal_name);
