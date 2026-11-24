@@ -1012,10 +1012,10 @@ HcmV?d00001
 
 diff --git a/applications_user/ir_tools/ir_tools.c b/applications_user/ir_tools/ir_tools.c
 new file mode 100644
-index 0000000..6d25168
+index 0000000..45fc19a
 --- /dev/null
 +++ b/applications_user/ir_tools/ir_tools.c
-@@ -0,0 +1,398 @@
+@@ -0,0 +1,403 @@
 +// IR Tools (M5StickC Plus2): Sleep Timer, Clap Off, Tilt Remote.
 +// Built into the firmware: FAPs cannot reach the IR, mic or IMU APIs on this port.
 +#include <furi.h>
@@ -1312,7 +1312,12 @@ index 0000000..6d25168
 +
 +    for(bool run = true; run;) {
 +        InputEvent e;
-+        bool got = furi_message_queue_get(q, &e, (a->screen == SClap && a->mic) ? 0 : 50) == FuriStatusOk;
++        // wake only when there is work: mic polling, tilt sampling, countdown redraw
++        uint32_t wait = (a->screen == SClap && a->mic) ? 0 :
++                        a->screen == STilt             ? 50 :
++                        a->screen == STimerRun         ? 500 :
++                                                         FuriWaitForever;
++        bool got = furi_message_queue_get(q, &e, wait) == FuriStatusOk;
 +        bool step = got && (e.type == InputTypePress || e.type == InputTypeRepeat);
 +        bool ok = got && e.key == InputKeyOk && e.type == InputTypeShort;
 +        bool back = got && e.key == InputKeyBack && e.type == InputTypeShort;
@@ -1448,43 +1453,47 @@ index 246f249..681b665 100644
  #define BOARD_HAS_VIBRO         0
  #define BOARD_HAS_SPEAKER       1
 diff --git a/components/furi_hal/furi_hal_display.c b/components/furi_hal/furi_hal_display.c
-index 5145e5dc148fe6ce6761608568e43e9633328484..9ec1d2cba5bc6ea7a203810101f8ef17b896c0a8 100644
+index 5145e5dc148fe6ce6761608568e43e9633328484..25bd06cc29b0a3d940aa384b8fe0a7df371b0033 100644
 GIT binary patch
-delta 3192
-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
-QM!(jK;u8F(_RocX0mn?U<p2Nx
+delta 3677
+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
+Rx95LrwaYi1?^^%8|3AC_PF4T_
 
 delta 43
-zcmccA#<(GS!)lhvlUU6sTd)~zE@WfjovbV+wmDtiReExQwe)07YlF=R)}Pn`RX`4@
+ycmZ41#ke7R!)lhvlUU6sTd)~zE@WfjoxIdZY_qkZtMueYHr_xiz1iRPIy(SnVh}F?
 
 diff --git a/components/furi_hal/furi_hal_display.h b/components/furi_hal/furi_hal_display.h
 index 5c54a9b..ff6d80b 100644
@@ -1792,3 +1801,61 @@ index 519bbbb..63a2cc1 100644
  
      flipper_format_free(ff);
      furi_record_close(RECORD_STORAGE);
+diff --git a/main/CMakeLists.txt b/main/CMakeLists.txt
+index fffb2cb..d76322f 100644
+--- a/main/CMakeLists.txt
++++ b/main/CMakeLists.txt
+@@ -32,7 +32,7 @@ endif()
+ idf_component_register(
+     SRCS "app_main.c" "${ESP32_FAM_REGISTRY_C}" "../applications/main/wlan_app/wlan_karma.c"
+     INCLUDE_DIRS "." "../applications/main/wlan_app"
+-    REQUIRES furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
++    REQUIRES esp_pm furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
+     LDFRAGMENTS "main.lf"
+ )
+ 
+diff --git a/main/app_main.c b/main/app_main.c
+index 0d4622a..e165baf 100644
+--- a/main/app_main.c
++++ b/main/app_main.c
+@@ -5,6 +5,8 @@
+ #include <flipper_application/elf/elf_file.h>
+ 
+ #include <esp_log.h>
++#include <esp_pm.h>
++#include <sdkconfig.h>
+ #include <esp_rom_uart.h>
+ #include <nvs.h>
+ #include <nvs_flash.h>
+@@ -195,6 +197,19 @@ void app_main(void) {
+ 
+     ESP_LOGI(TAG, "All services started, entering background...");
+ 
++#if CONFIG_PM_ENABLE
++    // Battery: let the CPU drop to 80 MHz while idle (drivers lock full speed when
++    // busy). 80 MHz is the floor where the ESP32 APB clock stays 80 MHz, so SPI/RMT/
++    // LEDC/I2C timing is untouched. No auto light sleep: it breaks IR/LCD timing.
++    esp_pm_config_t pm = {
++        .max_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
++        .min_freq_mhz = 80,
++        .light_sleep_enable = false,
++    };
++    esp_err_t pm_err = esp_pm_configure(&pm);
++    ESP_LOGI(TAG, "Power management: %s", esp_err_to_name(pm_err));
++#endif
++
+     // This blocks forever (thread scrubber)
+     furi_background();
+ }
+diff --git a/sdkconfig.defaults.esp32 b/sdkconfig.defaults.esp32
+index 6bad9a4..3c8795f 100644
+--- a/sdkconfig.defaults.esp32
++++ b/sdkconfig.defaults.esp32
+@@ -60,3 +60,7 @@ CONFIG_MBEDTLS_DES_C=y
+ # flash to free IRAM — ISR-critical paths stay in IRAM. Without this the link
+ # overflows iram0_0_seg by ~1.8KB with the full M5Stick app set.
+ CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
++
++# Battery: dynamic CPU frequency (80 MHz idle, full speed on demand), set up in
++# main/app_main.c. Auto light sleep stays off (IR/LCD timing).
++CONFIG_PM_ENABLE=y

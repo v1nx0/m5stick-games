@@ -145,7 +145,10 @@ int32_t brick_breaker_app(void* p) {
     for(bool run = true; run;) {
         InputEvent e;
         bool dirty = false;
-        if(furi_message_queue_get(q, &e, furi_ms_to_ticks(10)) == FuriStatusOk) {
+        // sleep until the next game tick is due (or a key arrives): no 100 Hz polling
+        uint32_t since = now_ms() - last;
+        uint32_t wait = since >= TICK_MS ? 0 : TICK_MS - since;
+        if(furi_message_queue_get(q, &e, furi_ms_to_ticks(wait)) == FuriStatusOk) {
             if(e.key == InputKeyBack && e.type == InputTypeShort) {
                 run = false;
             } else {

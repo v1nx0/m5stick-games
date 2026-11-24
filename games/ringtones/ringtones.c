@@ -128,7 +128,9 @@ int32_t ringtones_app(void* p) {
 
     for(bool run = true; run;) {
         InputEvent e;
-        if(furi_message_queue_get(q, &e, furi_ms_to_ticks(10)) == FuriStatusOk) {
+        // 10 ms steps only while a tune plays; idle = sleep until a key
+        if(furi_message_queue_get(q, &e, a->playing >= 0 ? furi_ms_to_ticks(10) : FuriWaitForever) ==
+           FuriStatusOk) {
             furi_mutex_acquire(a->mutex, FuriWaitForever);
             bool step = e.type == InputTypePress || e.type == InputTypeRepeat;
             if(e.key == InputKeyBack && e.type == InputTypeShort) {
