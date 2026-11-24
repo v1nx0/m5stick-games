@@ -31,12 +31,19 @@ jobs:
 
       - name: Build full firmware (App Store, Games menu, AC On, game pack)
         working-directory: fw
+        shell: bash
         env:
           FLIPPER_BOARD: m5stickcplus2
         run: |
           . $IDF_PATH/export.sh
           idf.py -B build_esp32 -DFLIPPER_BOARD=m5stickcplus2 set-target esp32
-          idf.py -B build_esp32 -DFLIPPER_BOARD=m5stickcplus2 build
+          set -o pipefail
+          # errors become public annotations (run logs need a login to read)
+          if ! idf.py -B build_esp32 -DFLIPPER_BOARD=m5stickcplus2 build 2>&1 | tee build.log; then
+            grep -E "error:|Error:|undefined reference|overflow|too small|does not fit" build.log \
+              | sort -u | head -30 | sed 's/^/::error::/'
+            exit 1
+          fi
 
       - name: Build every game as a .fap (for the App Store)
         run: |
