@@ -2173,10 +2173,10 @@ HcmV?d00001
 
 diff --git a/applications_user/sky_hopper_color/sky_hopper_color.c b/applications_user/sky_hopper_color/sky_hopper_color.c
 new file mode 100644
-index 0000000..a67ed6f
+index 0000000..779ced7
 --- /dev/null
 +++ b/applications_user/sky_hopper_color/sky_hopper_color.c
-@@ -0,0 +1,350 @@
+@@ -0,0 +1,354 @@
 +// Sky Hopper Color: full-color, full-screen flying game for the M5StickC Plus2.
 +// Original art, all drawn in code: a little robot drone hops through glowing crystal
 +// pillars over parallax hills. A = flap / start, Power (Back) = quit.
@@ -2220,7 +2220,7 @@ index 0000000..a67ed6f
 +    bool scored[PILLARS];
 +    int score, best;
 +    State state;
-+    uint32_t frame;
++    uint32_t frame, over_frame; // over_frame: when the crash happened
 +    float scroll;
 +} Game;
 +
@@ -2326,7 +2326,7 @@ index 0000000..a67ed6f
 +    if(g->vy > 6) g->vy = 6;
 +    g->y += g->vy;
 +    if(g->y - HERO_R < 0) g->y = HERO_R, g->vy = 0;
-+    if(g->y + HERO_R >= GROUND_Y) g->state = StateOver;
++    if(g->y + HERO_R >= GROUND_Y) g->state = StateOver; // over_frame set at end of step
 +    for(int i = 0; i < PILLARS; i++) {
 +        g->px[i] -= 2.0f;
 +        if(g->px[i] + PILLAR_W < 0) {
@@ -2342,7 +2342,10 @@ index 0000000..a67ed6f
 +            g->score++;
 +        }
 +    }
-+    if(g->state == StateOver && g->score > g->best) g->best = g->score;
++    if(g->state == StateOver) {
++        g->over_frame = g->frame;
++        if(g->score > g->best) g->best = g->score;
++    }
 +}
 +
 +// background + pillars for one band
@@ -2498,7 +2501,8 @@ index 0000000..a67ed6f
 +        while(furi_message_queue_get(q, &e, 0) == FuriStatusOk) {
 +            if(e.key == InputKeyBack && e.type == InputTypeShort) run = false;
 +            if(e.key == InputKeyOk && e.type == InputTypePress) {
-+                if(g->state == StateOver && g->frame > 20) {
++                // ~0.6 s after the crash before A restarts (no accidental instant restart)
++                if(g->state == StateOver && g->frame - g->over_frame > 20) {
 +                    reset(g);
 +                } else if(g->state != StateOver) {
 +                    g->state = StatePlay;
