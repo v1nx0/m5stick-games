@@ -1901,7 +1901,7 @@ index 605914a..21ee00e 100644
 + *  battery-backed RTC chip where the board has one. */
 +void furi_hal_rtc_ntp_start(void);
 diff --git a/fam_config.py b/fam_config.py
-index 36c143f..f9df3aa 100644
+index 36c143f..4d6a565 100644
 --- a/fam_config.py
 +++ b/fam_config.py
 @@ -78,6 +78,22 @@ APPS = [
@@ -1927,15 +1927,6 @@ index 36c143f..f9df3aa 100644
      # js_serial, js_gpio, js_i2c, js_spi excluded - need HAL porting
  ]
  
-@@ -106,7 +122,7 @@ _boards_without_subghz = {"waveshare_c6_1.47"}
- 
- # NRF24 plugs into the LORA slot (T-Embed CC1101). Boards without the slot
- # don't have the required pin defines.
--_boards_without_nrf24 = {"waveshare_c6_1.9", "waveshare_c6_1.47"}
-+_boards_without_nrf24 = {"waveshare_c6_1.9", "waveshare_c6_1.47", "m5stickcplus2"}  # Plus2: CE pin -1
- 
- if _board in _boards_without_ir:
-     APPS = [a for a in APPS if a not in ("infrared", "js_infrared")]
 @@ -117,6 +133,14 @@ if _board in _boards_without_subghz:
  if _board in _boards_without_nrf24:
      APPS = [a for a in APPS if a != "nrf24"]
