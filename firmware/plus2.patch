@@ -105,77 +105,87 @@ index 15c4b8d..b7f4075 100644
          button_panel,
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
 new file mode 100644
-index 0000000..c342751
+index 0000000..6ff43b7
 --- /dev/null
 +++ b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,199 @@
 +#include "../infrared_app_i.h" // IWYU pragma: keep
++#include <irac.h>
 +
-+// AC Full: set power, mode, temperature and fan directly, like the AC's own remote.
-+// AC remotes send the whole state in every press, so this builds the frame itself
-+// instead of replaying recordings. Protocol: Coolix (Midea and the many brands
-+// built on Midea units). Each change is sent right away.
++// AC Full: pick the brand, then power / mode / temperature / fan, like the AC's own
++// remote. AC remotes send the whole state with every press, so the frame is built by
++// IRremoteESP8266's IRac (components/irac) for the chosen brand's protocol. Each change
++// is sent right away; the brand choice is saved on the stick.
 +
-+typedef enum { AcPower, AcMode, AcTemp, AcFan, AcSend } AcItem;
++typedef enum { AcBrandRow, AcPower, AcMode, AcTemp, AcFan, AcSend } AcItem;
++
++#define AC_EVT_SEND        0x100u
++#define AC_EVT_OPEN_BRANDS 0x101u
++#define AC_EVT_BRAND_BASE  0x1000u
++#define AC_BRAND_FILE      EXT_PATH("infrared/.ac_brand")
++#define AC_TEMP_MIN        16
++#define AC_TEMP_MAX        30
++#define AC_MAX_TIMINGS     1024
 +
 +static const char* const AC_POWER[] = {"On", "Off"};
 +static const char* const AC_MODE[] = {"Cool", "Heat", "Dry", "Auto", "Fan"};
 +static const char* const AC_FAN[] = {"Auto", "Low", "Med", "High"};
-+#define AC_TEMP_MIN 17
-+#define AC_TEMP_MAX 30
 +
 +static struct {
++    uint16_t brand;
 +    uint8_t power, mode, temp_idx, fan; // indexes into the tables above
-+} ac = {0, 0, 24 - AC_TEMP_MIN, 0}; // On, Cool, 24 C, Auto (kept while the app runs)
++    bool loaded;
++    bool picking; // brand list is showing
++} ac = {0, 0, 0, 24 - AC_TEMP_MIN, 0, false, false};
 +
-+// Coolix 24-bit state: [B2][fan:3 | sensor:5 = 0x1F][temp:4 | mode:2 | 00]
-+static uint32_t coolix_state(void) {
-+    // temperature codes 17..30 C (Gray-code-like table of the protocol)
-+    static const uint8_t TEMP[] = {0x0, 0x1, 0x3, 0x2, 0x6, 0x7, 0x5, 0x4, 0xC, 0xD, 0x9, 0x8, 0xA, 0xB};
-+    static const uint8_t MODE[] = {0x0 /*cool*/, 0x3 /*heat*/, 0x1 /*dry*/, 0x2 /*auto*/, 0x1 /*fan*/};
-+    static const uint8_t FAN[] = {0x5 /*auto*/, 0x4 /*low*/, 0x2 /*med*/, 0x1 /*high*/};
-+    if(ac.power == 1) return 0xB27BE0; // Off
-+    uint8_t temp = TEMP[ac.temp_idx], fan = FAN[ac.fan];
-+    if(ac.mode == 4) temp = 0xE; // Fan only = Dry bits + temp code 0b1110
-+    if(ac.mode == 2 || ac.mode == 3) fan = 0x0; // Dry / Auto: unit picks the fan
-+    return 0xB20000u | ((uint32_t)(fan << 5 | 0x1F) << 8) | (uint32_t)(temp << 4) |
-+           (uint32_t)(MODE[ac.mode] << 2);
-+}
-+
-+// Each byte is followed by its inverse, MSB first; the frame is sent twice.
-+// 2 x (2 header + 48 bits x 2 + 1 footer) + 1 gap = 199 timings, ends on a mark.
-+static size_t coolix_timings(uint32_t state, uint32_t* t) {
-+    size_t n = 0;
-+    for(int rep = 0; rep < 2; rep++) {
-+        if(rep) t[n++] = 5244; // gap between the two copies
-+        t[n++] = 4692;
-+        t[n++] = 4416;
-+        for(int byte = 2; byte >= 0; byte--) {
-+            uint8_t v = (uint8_t)(state >> (byte * 8));
-+            for(int inv = 0; inv < 2; inv++, v = (uint8_t)~v) {
-+                for(int bit = 7; bit >= 0; bit--) {
-+                    t[n++] = 552;
-+                    t[n++] = (v >> bit) & 1 ? 1656 : 552;
-+                }
-+            }
-+        }
-+        t[n++] = 552;
++static void ac_brand_io(bool save) {
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    File* f = storage_file_alloc(storage);
++    if(save) {
++        if(storage_file_open(f, AC_BRAND_FILE, FSAM_WRITE, FSOM_CREATE_ALWAYS))
++            storage_file_write(f, &ac.brand, sizeof(ac.brand));
++    } else if(storage_file_open(f, AC_BRAND_FILE, FSAM_READ, FSOM_OPEN_EXISTING)) {
++        uint16_t b = 0;
++        if(storage_file_read(f, &b, sizeof(b)) == sizeof(b) && b < irac_brand_count()) ac.brand = b;
 +    }
-+    return n;
++    storage_file_close(f);
++    storage_file_free(f);
++    furi_record_close(RECORD_STORAGE);
 +}
 +
-+static void ac_full_send(void) {
-+    uint32_t timings[200];
-+    size_t n = coolix_timings(coolix_state(), timings);
-+    InfraredSignal* signal = infrared_signal_alloc();
-+    infrared_signal_set_raw_signal(signal, timings, n, 38000, 0.33f);
-+    infrared_signal_transmit(signal);
-+    infrared_signal_free(signal);
++static void ac_full_send(InfraredApp* infrared) {
++    uint32_t* timings = malloc(sizeof(uint32_t) * AC_MAX_TIMINGS);
++    size_t n = 0;
++    uint32_t freq = 0;
++    bool ok = irac_build(
++        ac.brand,
++        ac.power == 0,
++        (IracMode)ac.mode,
++        (uint8_t)(ac.temp_idx + AC_TEMP_MIN),
++        (IracFan)ac.fan,
++        timings,
++        AC_MAX_TIMINGS,
++        &n,
++        &freq);
++    if(ok) {
++        InfraredSignal* signal = infrared_signal_alloc();
++        infrared_signal_set_raw_signal(signal, timings, n, freq, 0.33f);
++        infrared_signal_transmit(signal);
++        infrared_signal_free(signal);
++        notification_message(infrared->notifications, &sequence_blink_cyan_10);
++    } else {
++        notification_message(infrared->notifications, &sequence_error);
++    }
++    free(timings);
 +}
 +
 +static void ac_full_set_text(VariableItem* item, AcItem which) {
 +    char buf[8];
 +    switch(which) {
++    case AcBrandRow:
++        variable_item_set_current_value_text(
++            item, irac_brand_count() ? irac_brand_name(ac.brand) : "no AC library");
++        break;
 +    case AcPower:
 +        variable_item_set_current_value_text(item, AC_POWER[ac.power]);
 +        break;
@@ -206,22 +216,29 @@ index 0000000..c342751
 +    // changing a setting turns the AC on with it, like a real remote
 +    if(which != AcPower && ac.power == 1) {
 +        ac.power = 0;
-+        variable_item_set_current_value_index(
-+            variable_item_list_get(infrared->var_item_list, AcPower), 0);
-+        ac_full_set_text(variable_item_list_get(infrared->var_item_list, AcPower), AcPower);
++        VariableItem* p = variable_item_list_get(infrared->var_item_list, AcPower);
++        variable_item_set_current_value_index(p, 0);
++        ac_full_set_text(p, AcPower);
 +    }
-+    view_dispatcher_send_custom_event(infrared->view_dispatcher, AcSend);
++    view_dispatcher_send_custom_event(infrared->view_dispatcher, AC_EVT_SEND);
 +}
 +
 +static void ac_full_enter(void* context, uint32_t index) {
 +    InfraredApp* infrared = context;
-+    UNUSED(index);
-+    view_dispatcher_send_custom_event(infrared->view_dispatcher, AcSend);
++    view_dispatcher_send_custom_event(
++        infrared->view_dispatcher, index == AcBrandRow ? AC_EVT_OPEN_BRANDS : AC_EVT_SEND);
 +}
 +
-+void infrared_scene_universal_ac_full_on_enter(void* context) {
++static void ac_brand_picked(void* context, uint32_t index) {
 +    InfraredApp* infrared = context;
++    view_dispatcher_send_custom_event(infrared->view_dispatcher, AC_EVT_BRAND_BASE + index);
++}
++
++static void ac_full_show_list(InfraredApp* infrared) {
 +    VariableItemList* list = infrared->var_item_list;
++    variable_item_list_reset(list);
++    VariableItem* brand = variable_item_list_add(list, "Brand", 1, NULL, infrared);
++    ac_full_set_text(brand, AcBrandRow);
 +    const struct {
 +        const char* label;
 +        uint8_t count, value;
@@ -235,26 +252,61 @@ index 0000000..c342751
 +        VariableItem* item =
 +            variable_item_list_add(list, rows[i].label, rows[i].count, ac_full_changed, infrared);
 +        variable_item_set_current_value_index(item, rows[i].value);
-+        ac_full_set_text(item, (AcItem)i);
++        ac_full_set_text(item, (AcItem)(i + 1));
 +    }
-+    VariableItem* send = variable_item_list_add(list, "Send again (OK)", 1, NULL, infrared);
-+    variable_item_set_current_value_text(send, "Midea");
++    VariableItem* send = variable_item_list_add(list, "Send again", 1, NULL, infrared);
++    variable_item_set_current_value_text(send, "OK");
 +    variable_item_list_set_enter_callback(list, ac_full_enter, infrared);
++    ac.picking = false;
 +    view_dispatcher_switch_to_view(infrared->view_dispatcher, InfraredViewVariableList);
 +}
 +
++static void ac_full_show_brands(InfraredApp* infrared) {
++    Submenu* submenu = infrared->submenu;
++    submenu_reset(submenu);
++    submenu_set_header(submenu, "AC brand");
++    for(size_t i = 0; i < irac_brand_count(); i++)
++        submenu_add_item(submenu, irac_brand_name(i), i, ac_brand_picked, infrared);
++    submenu_set_selected_item(submenu, ac.brand);
++    ac.picking = true;
++    view_dispatcher_switch_to_view(infrared->view_dispatcher, InfraredViewSubmenu);
++}
++
++void infrared_scene_universal_ac_full_on_enter(void* context) {
++    InfraredApp* infrared = context;
++    if(!ac.loaded) {
++        ac_brand_io(false);
++        ac.loaded = true;
++    }
++    ac_full_show_list(infrared);
++}
++
 +bool infrared_scene_universal_ac_full_on_event(void* context, SceneManagerEvent event) {
-+    UNUSED(context);
-+    if(event.type == SceneManagerEventTypeCustom && event.event == AcSend) {
-+        ac_full_send();
++    InfraredApp* infrared = context;
++    if(event.type == SceneManagerEventTypeBack && ac.picking) {
++        ac_full_show_list(infrared); // Back in the brand list returns to the settings
 +        return true;
 +    }
-+    return false;
++    if(event.type != SceneManagerEventTypeCustom) return false;
++    if(event.event == AC_EVT_SEND) {
++        if(irac_brand_count()) ac_full_send(infrared);
++    } else if(event.event == AC_EVT_OPEN_BRANDS) {
++        if(irac_brand_count()) ac_full_show_brands(infrared);
++    } else if(event.event >= AC_EVT_BRAND_BASE) {
++        ac.brand = (uint16_t)(event.event - AC_EVT_BRAND_BASE);
++        ac_brand_io(true);
++        ac_full_show_list(infrared);
++    } else {
++        return false;
++    }
++    return true;
 +}
 +
 +void infrared_scene_universal_ac_full_on_exit(void* context) {
 +    InfraredApp* infrared = context;
 +    variable_item_list_reset(infrared->var_item_list);
++    submenu_reset(infrared->submenu);
++    ac.picking = false;
 +}
 diff --git a/applications/main/wlan_app/scenes/scene_app_store.c b/applications/main/wlan_app/scenes/scene_app_store.c
 new file mode 100644
@@ -1012,6 +1064,84 @@ index d94c9e2..489100b 100644
 +bool wlan_sd_update_catalog_get(
 +    const WlanSdUpdate* u, uint32_t idx, char* rel, size_t rel_sz, uint32_t* size, uint8_t* src);
 +void wlan_sd_update_start_mode(WlanSdUpdate* u);
+diff --git a/applications/services/gui/modules/variable_item_list.c b/applications/services/gui/modules/variable_item_list.c
+index a02e52f..c33c886 100644
+--- a/applications/services/gui/modules/variable_item_list.c
++++ b/applications/services/gui/modules/variable_item_list.c
+@@ -5,6 +5,7 @@
+ #include <assets_icons.h>
+ #include <m-array.h>
+ #include <stdint.h>
++#include <sdkconfig.h>
+ 
+ struct VariableItem {
+     const char* label;
+@@ -40,6 +41,10 @@ static void variable_item_list_process_down(VariableItemList* variable_item_list
+ static void variable_item_list_process_left(VariableItemList* variable_item_list);
+ static void variable_item_list_process_right(VariableItemList* variable_item_list);
+ static void variable_item_list_process_ok(VariableItemList* variable_item_list);
++#if CONFIG_IDF_TARGET_ESP32
++static bool variable_item_list_cycle(VariableItemList* variable_item_list, int dir);
++VariableItem* variable_item_list_get_selected_item(VariableItemListModel* model);
++#endif
+ 
+ static void variable_item_list_draw_callback(Canvas* canvas, void* _model) {
+     VariableItemListModel* model = _model;
+@@ -222,11 +227,23 @@ static bool variable_item_list_input_callback(InputEvent* event, void* context)
+             variable_item_list_process_right(variable_item_list);
+             break;
+         case InputKeyOk:
++#if CONFIG_IDF_TARGET_ESP32
++            // M5StickC Plus2 has no Left/Right: OK steps a multi-value row forward
++            // (wrapping), rows with one value keep their OK action.
++            if(variable_item_list_cycle(variable_item_list, 1)) {
++                consumed = true;
++                break;
++            }
++#endif
+             variable_item_list_process_ok(variable_item_list);
+             break;
+         default:
+             break;
+         }
++#if CONFIG_IDF_TARGET_ESP32
++    } else if(event->type == InputTypeLong && event->key == InputKeyOk) {
++        consumed = variable_item_list_cycle(variable_item_list, -1); // hold OK = step back
++#endif
+     } else if(event->type == InputTypeRepeat) {
+         switch(event->key) {
+         case InputKeyUp:
+@@ -253,6 +270,30 @@ static bool variable_item_list_input_callback(InputEvent* event, void* context)
+     return consumed;
+ }
+ 
++#if CONFIG_IDF_TARGET_ESP32
++// Steps the selected row's value by dir (+1/-1) with wrap-around. Returns false
++// (does nothing) for single-value / locked rows so OK keeps its action there.
++static bool variable_item_list_cycle(VariableItemList* variable_item_list, int dir) {
++    bool cycled = false;
++    with_view_model(
++        variable_item_list->view,
++        VariableItemListModel * model,
++        {
++            VariableItem* item = variable_item_list_get_selected_item(model);
++            if(item && !item->locked && item->values_count > 1) {
++                item->current_value_index =
++                    (uint8_t)((item->current_value_index + item->values_count + dir) %
++                              item->values_count);
++                model->scroll_counter = 0;
++                if(item->change_callback) item->change_callback(item);
++                cycled = true;
++            }
++        },
++        true);
++    return cycled;
++}
++#endif
++
+ void variable_item_list_process_up(VariableItemList* variable_item_list) {
+     with_view_model(
+         variable_item_list->view,
 diff --git a/applications/services/power/power_service/power.c b/applications/services/power/power_service/power.c
 index ca752a2..e9aae8a 100644
 --- a/applications/services/power/power_service/power.c
@@ -1632,6 +1762,42 @@ index 0000000..45fc19a
 +    free(a);
 +    return 0;
 +}
+diff --git a/components/furi/core/log.h b/components/furi/core/log.h
+index e4909cd..1744c2f 100644
+--- a/components/furi/core/log.h
++++ b/components/furi/core/log.h
+@@ -8,6 +8,7 @@
+ #include <stdint.h>
+ #include <stdarg.h>
+ #include <stdbool.h>
++#include <sdkconfig.h> // CONFIG_IDF_TARGET_* for the log compile-out
+ 
+ #ifdef __cplusplus
+ extern "C" {
+@@ -147,10 +148,23 @@ bool furi_log_level_from_string(const char* str, FuriLogLevel* level);
+     furi_log_print_format(FuriLogLevelWarn, tag, format, ##__VA_ARGS__)
+ #define FURI_LOG_I(tag, format, ...) \
+     furi_log_print_format(FuriLogLevelInfo, tag, format, ##__VA_ARGS__)
++#if defined(CONFIG_IDF_TARGET_ESP32) && CONFIG_IDF_TARGET_ESP32
++// M5StickC Plus2 (classic ESP32, 3 MB app slot ~97% full): debug/trace logs are compiled
++// out - `if(0)` drops the call and its format string, arguments still count as used.
++#define FURI_LOG_D(tag, format, ...)                                                    \
++    do {                                                                                \
++        if(0) furi_log_print_format(FuriLogLevelDebug, tag, format, ##__VA_ARGS__);    \
++    } while(0)
++#define FURI_LOG_T(tag, format, ...)                                                    \
++    do {                                                                                \
++        if(0) furi_log_print_format(FuriLogLevelTrace, tag, format, ##__VA_ARGS__);    \
++    } while(0)
++#else
+ #define FURI_LOG_D(tag, format, ...) \
+     furi_log_print_format(FuriLogLevelDebug, tag, format, ##__VA_ARGS__)
+ #define FURI_LOG_T(tag, format, ...) \
+     furi_log_print_format(FuriLogLevelTrace, tag, format, ##__VA_ARGS__)
++#endif
+ 
+ /** Log methods
+  *
 diff --git a/components/furi_hal/CMakeLists.txt b/components/furi_hal/CMakeLists.txt
 index 234db6b..63335ef 100644
 --- a/components/furi_hal/CMakeLists.txt
@@ -1900,6 +2066,236 @@ index 605914a..21ee00e 100644
 +/** Start NTP time sync (call once WiFi has an IP). Result is saved to the
 + *  battery-backed RTC chip where the board has one. */
 +void furi_hal_rtc_ntp_start(void);
+diff --git a/components/irac/CMakeLists.txt b/components/irac/CMakeLists.txt
+new file mode 100644
+index 0000000..65649f7
+--- /dev/null
++++ b/components/irac/CMakeLists.txt
+@@ -0,0 +1,19 @@
++# AC full control: IRremoteESP8266 (LGPL-2.1) AC encoders, captured instead of sent.
++# CI clones the library into lib/ at a pinned commit and generates ac_brands.inc +
++# send_flags.cmake (tools/gen_ac_table.py in v1nx0/m5stick-games). Without lib/ a stub
++# keeps the firmware building (AC Full then reports "no AC library").
++set(IRLIB "${CMAKE_CURRENT_LIST_DIR}/lib/src")
++if(EXISTS "${IRLIB}/IRac.cpp")
++    file(GLOB IR_SRCS "${IRLIB}/*.cpp")
++    idf_component_register(
++        SRCS ${IR_SRCS} "irac_glue.cpp"
++        INCLUDE_DIRS "include"
++        PRIV_INCLUDE_DIRS "shim" "${IRLIB}")
++    # UNIT_TEST: no Arduino; mark()/space() become virtual so shim/IRsend_test.h captures
++    # them. Every protocol off except the AC ones IRac::sendAc needs (send_flags.cmake).
++    target_compile_definitions(${COMPONENT_LIB} PRIVATE UNIT_TEST=1 _IR_ENABLE_DEFAULT_=false)
++    include("${CMAKE_CURRENT_LIST_DIR}/send_flags.cmake")
++    target_compile_options(${COMPONENT_LIB} PRIVATE -w -Os)
++else()
++    idf_component_register(SRCS "irac_stub.c" INCLUDE_DIRS "include")
++endif()
+diff --git a/components/irac/include/irac.h b/components/irac/include/irac.h
+new file mode 100644
+index 0000000..3447ee8
+--- /dev/null
++++ b/components/irac/include/irac.h
+@@ -0,0 +1,33 @@
++#pragma once
++#include <stdbool.h>
++#include <stddef.h>
++#include <stdint.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++typedef enum { IracModeCool, IracModeHeat, IracModeDry, IracModeAuto, IracModeFan } IracMode;
++typedef enum { IracFanAuto, IracFanLow, IracFanMed, IracFanHigh } IracFan;
++
++/** Number of AC brand entries (0 when built without the library). */
++size_t irac_brand_count(void);
++/** Label shown in the Brand list, e.g. "Gree" or "Daikin (DAIKIN2)". */
++const char* irac_brand_name(size_t index);
++
++/** Builds the IR signal for the AC state into timings (mark/space pairs, starts with
++ *  a mark). Returns false if the brand can't encode it or the buffer is too small. */
++bool irac_build(
++    size_t brand,
++    bool power,
++    IracMode mode,
++    uint8_t temp_c,
++    IracFan fan,
++    uint32_t* timings,
++    size_t capacity,
++    size_t* count,
++    uint32_t* frequency);
++
++#ifdef __cplusplus
++}
++#endif
+diff --git a/components/irac/irac_glue.cpp b/components/irac/irac_glue.cpp
+new file mode 100644
+index 0000000..eeabe14
+--- /dev/null
++++ b/components/irac/irac_glue.cpp
+@@ -0,0 +1,82 @@
++// C API over IRremoteESP8266's IRac: one common AC state (power/mode/temp/fan) mapped
++// onto every AC protocol by the library itself, captured via shim/IRsend_test.h.
++#include "irac.h"
++#include "IRac.h"
++#include "IRsend_test.h"
++
++uint32_t* irac_cap_buf = nullptr;
++size_t irac_cap_size = 0, irac_cap_n = 0;
++uint32_t irac_cap_freq = 38000;
++bool irac_cap_overflow = false;
++
++namespace {
++struct AcBrand {
++    const char* name;
++    decode_type_t type;
++};
++// generated by tools/gen_ac_table.py from the pinned library: brand -> protocol
++const AcBrand AC_BRANDS[] = {
++#include "ac_brands.inc"
++};
++} // namespace
++
++extern "C" size_t irac_brand_count(void) {
++    return sizeof(AC_BRANDS) / sizeof(AC_BRANDS[0]);
++}
++
++extern "C" const char* irac_brand_name(size_t index) {
++    return index < irac_brand_count() ? AC_BRANDS[index].name : "";
++}
++
++extern "C" bool irac_build(
++    size_t brand,
++    bool power,
++    IracMode mode,
++    uint8_t temp_c,
++    IracFan fan,
++    uint32_t* timings,
++    size_t capacity,
++    size_t* count,
++    uint32_t* frequency) {
++    *count = 0;
++    *frequency = 0;
++    if(brand >= irac_brand_count() || !timings || capacity < 3) return false;
++
++    static const stdAc::opmode_t MODES[] = {
++        stdAc::opmode_t::kCool,
++        stdAc::opmode_t::kHeat,
++        stdAc::opmode_t::kDry,
++        stdAc::opmode_t::kAuto,
++        stdAc::opmode_t::kFan};
++    static const stdAc::fanspeed_t FANS[] = {
++        stdAc::fanspeed_t::kAuto,
++        stdAc::fanspeed_t::kLow,
++        stdAc::fanspeed_t::kMedium,
++        stdAc::fanspeed_t::kHigh};
++
++    stdAc::state_t st;
++    IRac::initState(&st);
++    st.protocol = AC_BRANDS[brand].type;
++    st.model = -1; // library default model for the protocol
++    st.power = power;
++    st.mode = MODES[mode <= IracModeFan ? mode : IracModeCool];
++    st.celsius = true;
++    st.degrees = temp_c;
++    st.fanspeed = FANS[fan <= IracFanHigh ? fan : IracFanAuto];
++
++    irac_cap_buf = timings;
++    irac_cap_size = capacity;
++    irac_cap_n = 0;
++    irac_cap_freq = 38000;
++    irac_cap_overflow = false;
++
++    IRac ac(0); // pin unused: IRsendTest captures instead of driving a GPIO
++    bool ok = ac.sendAc(st, nullptr);
++
++    if(irac_cap_n % 2 == 0 && irac_cap_n) irac_cap_n--; // raw signals must end on a mark
++    irac_cap_buf = nullptr;
++    if(!ok || irac_cap_overflow || irac_cap_n == 0) return false;
++    *count = irac_cap_n;
++    *frequency = irac_cap_freq ? irac_cap_freq : 38000;
++    return true;
++}
+diff --git a/components/irac/irac_stub.c b/components/irac/irac_stub.c
+new file mode 100644
+index 0000000..31138fd
+--- /dev/null
++++ b/components/irac/irac_stub.c
+@@ -0,0 +1,15 @@
++#include "irac.h"
++size_t irac_brand_count(void) {
++    return 0;
++}
++const char* irac_brand_name(size_t index) {
++    (void)index;
++    return "";
++}
++bool irac_build(size_t brand, bool power, IracMode mode, uint8_t temp_c, IracFan fan,
++                uint32_t* timings, size_t capacity, size_t* count, uint32_t* frequency) {
++    (void)brand, (void)power, (void)mode, (void)temp_c, (void)fan, (void)timings, (void)capacity;
++    *count = 0;
++    *frequency = 0;
++    return false;
++}
+diff --git a/components/irac/shim/IRsend_test.h b/components/irac/shim/IRsend_test.h
+new file mode 100644
+index 0000000..c18dabe
+--- /dev/null
++++ b/components/irac/shim/IRsend_test.h
+@@ -0,0 +1,44 @@
++// Replaces IRremoteESP8266's test sender: under UNIT_TEST every AC class holds an
++// IRsendTest member, so overriding mark()/space() here captures the exact timings the
++// library would send. The buffer is global (AC objects live on the stack).
++#pragma once
++#include <stddef.h>
++#include <stdint.h>
++#include "IRsend.h"
++#include "IRtimer.h"
++
++extern uint32_t* irac_cap_buf;
++extern size_t irac_cap_size, irac_cap_n;
++extern uint32_t irac_cap_freq;
++extern bool irac_cap_overflow;
++
++class IRsendTest : public IRsend {
++public:
++    explicit IRsendTest(uint16_t pin, bool inverted = false, bool use_modulation = true)
++        : IRsend(pin, inverted, use_modulation) {
++    }
++    uint16_t mark(uint16_t usec) override {
++        push(true, usec);
++        return 0;
++    }
++    void space(uint32_t usec) override {
++        push(false, usec);
++    }
++
++private:
++    // even index = mark, odd = space; same-kind neighbours merge; leading spaces dropped
++    void push(bool is_mark, uint32_t usec) {
++        IRtimer::add(usec);
++        if(!usec) return;
++        if(irac_cap_n == 0 && !is_mark) return;
++        irac_cap_freq = _freq_unittest;
++        bool last_is_mark = irac_cap_n && ((irac_cap_n - 1) % 2 == 0);
++        if(irac_cap_n && last_is_mark == is_mark) {
++            irac_cap_buf[irac_cap_n - 1] += usec;
++        } else if(irac_cap_n < irac_cap_size) {
++            irac_cap_buf[irac_cap_n++] = usec;
++        } else {
++            irac_cap_overflow = true;
++        }
++    }
++};
+diff --git a/components/irac/shim/iostream b/components/irac/shim/iostream
+new file mode 100644
+index 0000000..4ec0f4c
+--- /dev/null
++++ b/components/irac/shim/iostream
+@@ -0,0 +1 @@
++// Empty on purpose: keeps IRremoteESP8266 (UNIT_TEST) from pulling in iostream.
 diff --git a/fam_config.py b/fam_config.py
 index 36c143f..4d6a565 100644
 --- a/fam_config.py
@@ -2030,7 +2426,7 @@ index 519bbbb..63a2cc1 100644
      flipper_format_free(ff);
      furi_record_close(RECORD_STORAGE);
 diff --git a/main/CMakeLists.txt b/main/CMakeLists.txt
-index fffb2cb..d76322f 100644
+index fffb2cb..a7544e8 100644
 --- a/main/CMakeLists.txt
 +++ b/main/CMakeLists.txt
 @@ -32,7 +32,7 @@ endif()
@@ -2038,7 +2434,7 @@ index fffb2cb..d76322f 100644
      SRCS "app_main.c" "${ESP32_FAM_REGISTRY_C}" "../applications/main/wlan_app/wlan_karma.c"
      INCLUDE_DIRS "." "../applications/main/wlan_app"
 -    REQUIRES furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
-+    REQUIRES esp_pm furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
++    REQUIRES esp_pm irac furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
      LDFRAGMENTS "main.lf"
  )
  
@@ -2076,10 +2472,10 @@ index 0d4622a..e165baf 100644
      furi_background();
  }
 diff --git a/sdkconfig.defaults.esp32 b/sdkconfig.defaults.esp32
-index 6bad9a4..3c8795f 100644
+index 6bad9a4..ce2e737 100644
 --- a/sdkconfig.defaults.esp32
 +++ b/sdkconfig.defaults.esp32
-@@ -60,3 +60,7 @@ CONFIG_MBEDTLS_DES_C=y
+@@ -60,3 +60,12 @@ CONFIG_MBEDTLS_DES_C=y
  # flash to free IRAM — ISR-critical paths stay in IRAM. Without this the link
  # overflows iram0_0_seg by ~1.8KB with the full M5Stick app set.
  CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
@@ -2087,3 +2483,8 @@ index 6bad9a4..3c8795f 100644
 +# Battery: dynamic CPU frequency (80 MHz idle, full speed on demand), set up in
 +# main/app_main.c. Auto light sleep stays off (IR/LCD timing).
 +CONFIG_PM_ENABLE=y
++
++# Flash space: ESP-IDF info logs compiled out (warnings/errors kept). Frees room
++# for the AC library (components/irac).
++CONFIG_LOG_DEFAULT_LEVEL_WARN=y
++CONFIG_LOG_DEFAULT_LEVEL=2

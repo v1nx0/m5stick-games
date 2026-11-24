@@ -13,6 +13,8 @@ env:
   # trollmaster419/Flipper-Zero-ESP32-Port commit that firmware/plus2.patch is made against
   FW_REPO: https://github.com/trollmaster419/Flipper-Zero-ESP32-Port
   FW_COMMIT: f2e9abed58e2a8dd8a2aa6413cb9fb1710d494bb
+  # crankyoldgit/IRremoteESP8266 commit the AC brand table is generated from
+  IRAC_COMMIT: 1e2f0f3ef0a93cbf2a8ddb2e95130f8f4c584b3f
 
 jobs:
   build:
@@ -28,6 +30,10 @@ jobs:
           git fetch -q --depth 1 "$FW_REPO" "$FW_COMMIT" && git checkout -q FETCH_HEAD
           git apply --binary ../firmware/plus2.patch
           cp -r ../games/* applications_user/
+          # AC Full Control: IRremoteESP8266 (LGPL-2.1) AC encoders + generated brand table
+          git clone -q https://github.com/crankyoldgit/IRremoteESP8266 components/irac/lib
+          git -C components/irac/lib checkout -q "$IRAC_COMMIT"
+          python3 ../tools/gen_ac_table.py components/irac/lib components/irac
 
       - name: Build full firmware (App Store, Games menu, AC On, game pack)
         working-directory: fw
