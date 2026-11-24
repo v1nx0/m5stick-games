@@ -1,0 +1,24 @@
+{
+  "name": "Flipper Zero ESP32 port - M5StickC Plus2 (App Store + games + AC On)",
+  "version": "d0627fc",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        {
+          "path": "bootloader.bin",
+          "offset": 4096
+        },
+        {
+          "path": "partition-table.bin",
+          "offset": 32768
+        },
+        {
+          "path": "furi_esp32.bin",
+          "offset": 65536
+        }
+      ]
+    }
+  ]
+}
