@@ -1,0 +1,10 @@
+App(
+    appid="sky_hopper",
+    name="Sky Hopper",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="sky_hopper_app",
+    requires=["gui"],
+    stack_size=2048,
+    fap_category="Games",
+    fap_icon="icon_10px.png",
+)

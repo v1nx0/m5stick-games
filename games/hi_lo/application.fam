@@ -1,0 +1,10 @@
+App(
+    appid="hi_lo",
+    name="Hi-Lo",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="hi_lo_app",
+    requires=["gui"],
+    stack_size=3 * 1024,
+    fap_category="Games",
+    fap_icon="icon_10px.png",
+)

@@ -1,0 +1,10 @@
+App(
+    appid="merge_tiles",
+    name="Merge Tiles",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="merge_tiles_app",
+    requires=["gui"],
+    stack_size=3 * 1024,
+    fap_category="Games",
+    fap_icon="icon_10px.png",
+)

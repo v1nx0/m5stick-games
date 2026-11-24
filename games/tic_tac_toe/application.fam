@@ -1,0 +1,10 @@
+App(
+    appid="tic_tac_toe",
+    name="Tic-Tac-Toe",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="tic_tac_toe_app",
+    requires=["gui"],
+    stack_size=3 * 1024,
+    fap_category="Games",
+    fap_icon="icon_10px.png",
+)
