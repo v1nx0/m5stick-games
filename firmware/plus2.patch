@@ -812,37 +812,37 @@ index d94c9e2..489100b 100644
 +bool wlan_sd_update_catalog_get(
 +    const WlanSdUpdate* u, uint32_t idx, char* rel, size_t rel_sz, uint32_t* size, uint8_t* src);
 +void wlan_sd_update_start_mode(WlanSdUpdate* u);
-diff --git a/applications/services/desktop/desktop_settings.c b/applications/services/desktop/desktop_settings.c
-index bc85b29..99ed819 100644
---- a/applications/services/desktop/desktop_settings.c
-+++ b/applications/services/desktop/desktop_settings.c
-@@ -73,6 +73,7 @@ void desktop_settings_load(DesktopSettings* settings) {
-     if(!success) {
-         FURI_LOG_W(TAG, "Failed to load file, using defaults");
-         memset(settings, 0, sizeof(DesktopSettings));
-+        settings->displayBatteryPercentage = DISPLAY_BATTERY_BAR_PERCENT; // show the % by default
-         desktop_settings_save(settings);
-     }
- }
 diff --git a/applications/services/power/power_service/power.c b/applications/services/power/power_service/power.c
-index ca752a2..44381a2 100644
+index ca752a2..c9589b3 100644
 --- a/applications/services/power/power_service/power.c
 +++ b/applications/services/power/power_service/power.c
-@@ -596,6 +596,14 @@ static void power_tick_callback(void* context) {
+@@ -1,4 +1,5 @@
+ #include "desktop/desktop_settings.h"
++#include <momentum_settings.h>
+ #include "power_i.h"
+ 
+ #include <furi.h>
+@@ -20,6 +21,11 @@
+ static void power_draw_battery_callback(Canvas* canvas, void* context) {
      furi_assert(context);
      Power* power = context;
++    // displayBatteryPercentage was never set, so it stayed "bar only". This build has
++    // no Desktop settings app; its battery option is Momentum > Interface > Statusbar >
++    // Battery icon (default Bar + Percent). Same order as DISPLAY_BATTERY_*, shifted by Off.
++    if(momentum_settings.battery_icon == BatteryIconOff) return;
++    power->displayBatteryPercentage = (uint8_t)(momentum_settings.battery_icon - 1);
+     canvas_draw_icon(canvas, 0, 0, &I_Battery_26x8);
  
-+    // Battery View (Settings > Desktop) was only read when changed, never at boot,
-+    // so every restart fell back to "bar only". Load it once on the first tick.
-+    static bool battery_view_loaded = false;
-+    if(!battery_view_loaded) {
-+        battery_view_loaded = true;
-+        power_trigger_ui_update(power);
-+    }
-+
-     // Update data from gauge and charger
-     const bool need_refresh = power_update_info(power);
-     // Check low battery level
+     if(power->info.gauge_is_ok) {
+@@ -606,6 +612,8 @@ static void power_tick_callback(void* context) {
+     power_check_battery_level_change(power);
+     // charge supress arm/disarm
+     power_charge_supress(power);
++    // Battery icon "OFF": hide the view port so no empty slot stays in the status bar
++    view_port_enabled_set(power->battery_view_port, momentum_settings.battery_icon != BatteryIconOff);
+     // Update battery view port
+     if(need_refresh) {
+         view_port_update(power->battery_view_port);
 diff --git a/applications_user/games_menu/application.fam b/applications_user/games_menu/application.fam
 new file mode 100644
 index 0000000..b37cafd
