@@ -1,5 +1,5 @@
 V:0
-T:1795533626
+T:1795535895
 D:apps
 D:apps/Games
 F:9288e63ca1c1f679e9c4cbef3a7cc513:6340:apps/Games/brick_breaker.fap
@@ -13,3 +13,6 @@ F:08d50bff6c23beb1037b98d1dde09c6a:5392:apps/Games/sky_hopper.fap
 F:379fdb60a47c107bab504c523e0d785a:5588:apps/Games/space_dodge.fap
 F:20807184c482f957573792c921928d31:6128:apps/Games/star_shooter.fap
 F:85a00d614ee63f8b15fc43dcabc216c0:7116:apps/Games/tic_tac_toe.fap
+D:infrared
+D:infrared/assets
+F:64ee69497e18515664bb78fbee4eaf10:65916:infrared/assets/projectors_plus.ir
