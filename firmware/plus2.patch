@@ -56,12 +56,33 @@ index 15c4b8d..b7f4075 100644
      infrared_brute_force_add_record(brute_force, i++, "Dh");
      button_panel_add_item(
          button_panel,
+diff --git a/applications/main/infrared/scenes/infrared_scene_universal_projector.c b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
+index ac3f0c3..fefa1e2 100644
+--- a/applications/main/infrared/scenes/infrared_scene_universal_projector.c
++++ b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
+@@ -7,7 +7,15 @@ void infrared_scene_universal_projector_on_enter(void* context) {
+     ButtonPanel* button_panel = infrared->button_panel;
+     InfraredBruteForce* brute_force = infrared->brute_force;
+ 
+-    infrared_brute_force_set_db_filename(brute_force, EXT_PATH("infrared/assets/projectors.ir"));
++    // projectors_plus.ir (App Store pack: more brands + Play/Pause) when installed
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    bool plus = storage_common_stat(storage, EXT_PATH("infrared/assets/projectors_plus.ir"), NULL) ==
++                FSE_OK;
++    furi_record_close(RECORD_STORAGE);
++    infrared_brute_force_set_db_filename(
++        brute_force,
++        plus ? EXT_PATH("infrared/assets/projectors_plus.ir") :
++               EXT_PATH("infrared/assets/projectors.ir"));
+     //TODO Improve Projectors universal remote
+     button_panel_reserve(button_panel, 2, 3);
+     uint32_t i = 0;
 diff --git a/applications/main/wlan_app/scenes/scene_app_store.c b/applications/main/wlan_app/scenes/scene_app_store.c
 new file mode 100644
-index 0000000..2f2015b
+index 0000000..758196c
 --- /dev/null
 +++ b/applications/main/wlan_app/scenes/scene_app_store.c
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,152 @@
 +#include "../wlan_app.h"
 +#include "../wlan_sd_update.h"
 +#include <storage/storage.h>
@@ -103,10 +124,13 @@ index 0000000..2f2015b
 +    for(uint32_t i = 0; wlan_sd_update_catalog_get(app->sd_update, i, rel, sizeof(rel), &size, NULL); i++) {
 +        snprintf(dest, sizeof(dest), "/ext/%s", rel);
 +        bool have = storage_common_stat(storage, dest, NULL) == FSE_OK;
-+        // "* Games/tetris 11k" -- '*' marks already installed
++        // "* Games/tetris 11k" -- '*' marks already installed; IR packs show as "IR: name"
++        bool ir = strncmp(rel, "infrared/", 9) == 0;
++        const char* name = ir ? strrchr(rel, '/') + 1 : rel + 5; // rel is "apps/..." or "infrared/..."
++        const char* dot = strrchr(name, '.');
 +        snprintf(
-+            label, sizeof(label), "%s%.*s %luk", have ? "* " : "", (int)(strlen(rel) - 9),
-+            rel + 5, (unsigned long)(size / 1024));
++            label, sizeof(label), "%s%s%.*s %luk", have ? "* " : "", ir ? "IR: " : "",
++            (int)(dot - name), name, (unsigned long)(size / 1024));
 +        submenu_add_item(app->submenu, label, i, store_item_cb, app);
 +    }
 +    furi_record_close(RECORD_STORAGE);
@@ -196,7 +220,7 @@ index 0000000..2f2015b
 +            else if(st == StoreFetching)
 +                store_show_list(app);
 +            else
-+                store_msg(app, "Installed", "Find it in Apps menu");
++                store_msg(app, "Installed", "Apps menu / IR remote"); // games in Apps, IR packs used by Universal remotes
 +        } else if(ph == WlanSdUpdateError) {
 +            store_msg(app, "App Store", wlan_sd_update_get_error(app->sd_update));
 +        } else {
@@ -292,7 +316,7 @@ index 349fbad..f49702a 100644
      View* view_sd_update;
  
 diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
-index 8a5d7bd..b99ad1b 100644
+index 8a5d7bd..e213305 100644
 --- a/applications/main/wlan_app/wlan_sd_update.c
 +++ b/applications/main/wlan_app/wlan_sd_update.c
 @@ -25,6 +25,11 @@
@@ -431,7 +455,7 @@ index 8a5d7bd..b99ad1b 100644
      sd_update_set_file(u, "version.txt");
      return u;
  }
-@@ -509,10 +597,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -509,10 +597,67 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
  void wlan_sd_update_free(WlanSdUpdate* u) {
      if(!u) return;
      wlan_sd_update_cancel(u);
@@ -477,8 +501,12 @@ index 8a5d7bd..b99ad1b 100644
 +        if(c2) {
 +            const char* path = c2 + 1;
 +            size_t pl = (size_t)(end - path);
-+            if(pl > 9 && pl < rel_sz && strncmp(path, "apps/", 5) == 0 &&
-+               memcmp(end - 4, ".fap", 4) == 0 && n++ == idx) {
++            bool fap = strncmp(path, "apps/", 5) == 0 && memcmp(end - 4, ".fap", 4) == 0;
++            // IR code packs only from our own repo (m5resources' .ir files are already
++            // on the device via Update SD)
++            bool ir_pack = cur_src > 0 && strncmp(path, "infrared/", 9) == 0 &&
++                           memcmp(end - 3, ".ir", 3) == 0;
++            if(pl > 9 && pl < rel_sz && (fap || ir_pack) && n++ == idx) {
 +                memcpy(rel, path, pl);
 +                rel[pl] = '\0';
 +                if(size) *size = (uint32_t)strtoul(c1 + 1, NULL, 10);
@@ -495,7 +523,7 @@ index 8a5d7bd..b99ad1b 100644
      if(u->running) return;
      u->cancel = false;
      u->percent = 0;
-@@ -524,17 +665,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
+@@ -524,17 +669,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
      u->phase = WlanSdUpdateChecking;
      u->running = true;
      static StaticTask_t sd_upd_tcb;

@@ -6,6 +6,7 @@ Games for the Flipper Zero ESP32 port on **M5StickC Plus2**, served to the
 on-device **WiFi > App Store** (which also lists `trollmaster419/m5resources`).
 
 - `games/` -- sources (one folder per app, Flipper `application.fam` format)
+- `infrared/assets/*.ir` -- IR code packs (projectors_plus.ir: m5resources + Flipper-IRDB CC0, adds Play/Pause)
 - `apps/Games/*.fap` + `Manifest` -- built by GitHub Actions on every push to `games/`
 
 Add a game: put its folder in `games/`, push. The workflow builds it against the
