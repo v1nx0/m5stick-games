@@ -866,10 +866,10 @@ index 0000000..b37cafd
 +)
 diff --git a/applications_user/games_menu/games_menu.c b/applications_user/games_menu/games_menu.c
 new file mode 100644
-index 0000000..5988b81
+index 0000000..d42f2ed
 --- /dev/null
 +++ b/applications_user/games_menu/games_menu.c
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,101 @@
 +// Games: lists the built-in game pack (no SD card on M5StickC Plus2, so the
 +// games are compiled into the firmware) and runs the picked one in this thread.
 +// Calling the entry directly: a loader start from inside a running app is
@@ -878,6 +878,7 @@ index 0000000..5988b81
 +#include <gui/gui.h>
 +#include <gui/view_dispatcher.h>
 +#include <gui/modules/submenu.h>
++#include <furi_hal_display.h>
 +
 +extern int32_t snake_game_app(void* p);
 +extern int32_t sky_hopper_app(void* p);
@@ -892,22 +893,28 @@ index 0000000..5988b81
 +extern int32_t star_shooter_app(void* p);
 +extern int32_t hi_lo_app(void* p);
 +
++// RGB888 -> RGB565, byte-swapped for the ST7789 (the display driver's color format)
++#define RGB(r, g, b)                                                                         ((uint16_t)(((((r) & 0xF8) << 8 | ((g) & 0xFC) << 3 | (b) >> 3) >> 8) |                              (((((r) & 0xF8) << 8 | ((g) & 0xFC) << 3 | (b) >> 3) & 0xFF) << 8)))
++
++// Each game gets its own two colors while it runs: field = background fill,
++// ink = everything the game draws. The UI colors come back when it exits.
 +static const struct {
 +    const char* name;
 +    int32_t (*entry)(void*);
++    uint16_t field, ink;
 +} GAMES[] = {
-+    {"Snake", snake_game_app},
-+    {"Sky Hopper", sky_hopper_app},
-+    {"Brick Breaker", brick_breaker_app},
-+    {"Mines", mines_app},
-+    {"Tic-Tac-Toe", tic_tac_toe_app},
-+    {"Four in a Row", four_in_a_row_app},
-+    {"Merge Tiles", merge_tiles_app},
-+    {"Pattern Memory", pattern_memory_app},
-+    {"Reaction Test", reaction_test_app},
-+    {"Space Dodge", space_dodge_app},
-+    {"Star Shooter", star_shooter_app},
-+    {"Hi-Lo", hi_lo_app},
++    {"Snake", snake_game_app, RGB(0, 24, 0), RGB(80, 255, 80)},
++    {"Sky Hopper", sky_hopper_app, RGB(10, 30, 70), RGB(130, 210, 255)},
++    {"Brick Breaker", brick_breaker_app, RGB(24, 0, 36), RGB(255, 150, 0)},
++    {"Mines", mines_app, RGB(30, 30, 30), RGB(255, 80, 80)},
++    {"Tic-Tac-Toe", tic_tac_toe_app, RGB(0, 0, 48), RGB(255, 255, 255)},
++    {"Four in a Row", four_in_a_row_app, RGB(0, 20, 80), RGB(255, 220, 0)},
++    {"Merge Tiles", merge_tiles_app, RGB(48, 26, 0), RGB(255, 205, 130)},
++    {"Pattern Memory", pattern_memory_app, RGB(36, 0, 36), RGB(255, 110, 255)},
++    {"Reaction Test", reaction_test_app, RGB(0, 0, 0), RGB(0, 255, 255)},
++    {"Space Dodge", space_dodge_app, RGB(0, 0, 24), RGB(210, 210, 255)},
++    {"Star Shooter", star_shooter_app, RGB(0, 0, 0), RGB(255, 255, 0)},
++    {"Hi-Lo", hi_lo_app, RGB(0, 50, 0), RGB(255, 255, 255)},
 +};
 +
 +typedef struct {
@@ -953,7 +960,13 @@ index 0000000..5988b81
 +
 +        if(m.picked < 0) break;
 +        last = (uint32_t)m.picked;
++        const uint16_t ui_field = furi_hal_display_get_fg_color();
++        const uint16_t ui_ink = furi_hal_display_get_bg_color();
++        furi_hal_display_set_fg_color(GAMES[m.picked].field);
++        furi_hal_display_set_bg_color(GAMES[m.picked].ink);
 +        GAMES[m.picked].entry(NULL);
++        furi_hal_display_set_fg_color(ui_field);
++        furi_hal_display_set_bg_color(ui_ink);
 +    }
 +    furi_record_close(RECORD_GUI);
 +    return 0;
