@@ -50,9 +50,11 @@ jobs:
           python3 tools/make_manifest.py
 
       - name: Collect firmware for the web flasher
+        shell: bash
         run: |
           B=fw/build_esp32
           mkdir -p docs/firmware
+          find $B -maxdepth 2 -name '*.bin' -printf '%s %p\n'
           cp $B/bootloader/bootloader.bin $B/partition_table/partition-table.bin $B/furi_esp32.bin docs/firmware/
           python3 tools/make_flasher_manifest.py "${GITHUB_SHA::7}"
 
