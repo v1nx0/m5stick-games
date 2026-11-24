@@ -1574,10 +1574,10 @@ index 0000000..b37cafd
 +)
 diff --git a/applications_user/games_menu/games_menu.c b/applications_user/games_menu/games_menu.c
 new file mode 100644
-index 0000000..d42f2ed
+index 0000000..eac61d0
 --- /dev/null
 +++ b/applications_user/games_menu/games_menu.c
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,105 @@
 +// Games: lists the built-in game pack (no SD card on M5StickC Plus2, so the
 +// games are compiled into the firmware) and runs the picked one in this thread.
 +// Calling the entry directly: a loader start from inside a running app is
@@ -1590,6 +1590,7 @@ index 0000000..d42f2ed
 +
 +extern int32_t snake_game_app(void* p);
 +extern int32_t sky_hopper_app(void* p);
++extern int32_t sky_hopper_color_app(void* p);
 +extern int32_t brick_breaker_app(void* p);
 +extern int32_t mines_app(void* p);
 +extern int32_t tic_tac_toe_app(void* p);
@@ -1612,6 +1613,7 @@ index 0000000..d42f2ed
 +    uint16_t field, ink;
 +} GAMES[] = {
 +    {"Snake", snake_game_app, RGB(0, 24, 0), RGB(80, 255, 80)},
++    {"Sky Hopper Color", sky_hopper_color_app, 0, 0}, // full color, draws its own
 +    {"Sky Hopper", sky_hopper_app, RGB(10, 30, 70), RGB(130, 210, 255)},
 +    {"Brick Breaker", brick_breaker_app, RGB(24, 0, 36), RGB(255, 150, 0)},
 +    {"Mines", mines_app, RGB(30, 30, 30), RGB(255, 80, 80)},
@@ -1670,8 +1672,10 @@ index 0000000..d42f2ed
 +        last = (uint32_t)m.picked;
 +        const uint16_t ui_field = furi_hal_display_get_fg_color();
 +        const uint16_t ui_ink = furi_hal_display_get_bg_color();
-+        furi_hal_display_set_fg_color(GAMES[m.picked].field);
-+        furi_hal_display_set_bg_color(GAMES[m.picked].ink);
++        if(GAMES[m.picked].field || GAMES[m.picked].ink) { // 0,0 = full-color game
++            furi_hal_display_set_fg_color(GAMES[m.picked].field);
++            furi_hal_display_set_bg_color(GAMES[m.picked].ink);
++        }
 +        GAMES[m.picked].entry(NULL);
 +        furi_hal_display_set_fg_color(ui_field);
 +        furi_hal_display_set_bg_color(ui_ink);
@@ -2140,6 +2144,389 @@ index 0000000..45fc19a
 +    free(a);
 +    return 0;
 +}
+diff --git a/applications_user/sky_hopper_color/application.fam b/applications_user/sky_hopper_color/application.fam
+new file mode 100644
+index 0000000..69f7c33
+--- /dev/null
++++ b/applications_user/sky_hopper_color/application.fam
+@@ -0,0 +1,10 @@
++App(
++    appid="sky_hopper_color",
++    name="Sky Hopper Color",
++    apptype=FlipperAppType.EXTERNAL,
++    entry_point="sky_hopper_color_app",
++    requires=["gui", "storage"],
++    stack_size=4 * 1024,
++    fap_icon="icon_10px.png",
++    fap_category="Games",
++)
+diff --git a/applications_user/sky_hopper_color/icon_10px.png b/applications_user/sky_hopper_color/icon_10px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..1ede9a5480c7f74012c85f8f5a45e048561a8898
+GIT binary patch
+literal 87
+zcmeAS@N?(olHy`uVBq!ia0vp^AT}2xkYHHq`AGms$$7dshE&W+PGDekJ65&KormYQ
+jq{KhN1_>Va83!IQxNT!Od7;a_0;I#!)z4*}Q$iB}BsCVA
+
+literal 0
+HcmV?d00001
+
+diff --git a/applications_user/sky_hopper_color/sky_hopper_color.c b/applications_user/sky_hopper_color/sky_hopper_color.c
+new file mode 100644
+index 0000000..a67ed6f
+--- /dev/null
++++ b/applications_user/sky_hopper_color/sky_hopper_color.c
+@@ -0,0 +1,350 @@
++// Sky Hopper Color: full-color, full-screen flying game for the M5StickC Plus2.
++// Original art, all drawn in code: a little robot drone hops through glowing crystal
++// pillars over parallax hills. A = flap / start, Power (Back) = quit.
++// Draws straight to the panel (like Doom): gui_direct_draw_acquire() pauses the GUI,
++// each 15-row band is rendered into a small DMA buffer and sent - no full framebuffer.
++#include <furi.h>
++#include <furi_hal.h>
++#include <gui/gui.h>
++#include <input/input.h>
++#include <storage/storage.h>
++#include <esp_lcd_panel_ops.h>
++#include <esp_heap_caps.h>
++#include <math.h>
++#include <stdlib.h>
++#include <string.h>
++
++#define W 240
++#define H 135
++#define BAND 15
++#define GROUND_Y 121
++#define PILLARS 3
++#define PILLAR_W 26
++#define GAP 50
++#define SPACING 104
++#define HERO_X 56
++#define HERO_R 7
++#define BEST_FILE EXT_PATH("apps_data/sky_hopper_color.best")
++
++// RGB888 -> byte-swapped RGB565 (ST7789 byte order used by the display driver)
++static inline uint16_t rgb(int r, int g, int b) {
++    uint16_t c = (uint16_t)(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3));
++    return (uint16_t)((c >> 8) | (c << 8));
++}
++
++typedef enum { StateReady, StatePlay, StateOver } State;
++
++typedef struct {
++    float y, vy;
++    float px[PILLARS];
++    int gap_y[PILLARS];
++    bool scored[PILLARS];
++    int score, best;
++    State state;
++    uint32_t frame;
++    float scroll;
++} Game;
++
++// ---- tiny 3x5 font (digits + the letters we print) ----
++static const char FONT_CHARS[] = "0123456789ABEFGLMOPRSTVY";
++static const uint8_t FONT[][5] = {
++    {7, 5, 5, 5, 7}, {2, 6, 2, 2, 7}, {7, 1, 7, 4, 7}, {7, 1, 7, 1, 7}, {5, 5, 7, 1, 1},
++    {7, 4, 7, 1, 7}, {7, 4, 7, 5, 7}, {7, 1, 1, 1, 1}, {7, 5, 7, 5, 7}, {7, 5, 7, 1, 7},
++    {2, 5, 7, 5, 5}, // A
++    {6, 5, 6, 5, 6}, // B
++    {7, 4, 6, 4, 7}, // E
++    {7, 4, 6, 4, 4}, // F
++    {7, 4, 5, 5, 7}, // G
++    {4, 4, 4, 4, 7}, // L
++    {5, 7, 7, 5, 5}, // M
++    {7, 5, 5, 5, 7}, // O
++    {7, 5, 7, 4, 4}, // P
++    {6, 5, 6, 5, 5}, // R
++    {7, 4, 7, 1, 7}, // S
++    {7, 2, 2, 2, 2}, // T
++    {5, 5, 5, 5, 2}, // V
++    {5, 5, 2, 2, 2}, // Y
++};
++
++typedef struct {
++    const char* s;
++    int x, y, scale;
++    uint16_t color;
++} Text;
++
++static int glyph_index(char c) {
++    const char* p = strchr(FONT_CHARS, c);
++    return (p && c) ? (int)(p - FONT_CHARS) : -1;
++}
++
++static int text_width(const char* s, int scale) {
++    return (int)strlen(s) * 4 * scale - scale;
++}
++
++// Draws text pixels that fall inside band rows [y0, y0+h)
++static void band_text(uint16_t* buf, int y0, int h, const Text* t) {
++    for(int i = 0; t->s[i]; i++) {
++        int g = glyph_index(t->s[i]);
++        if(g < 0) continue;
++        int gx0 = t->x + i * 4 * t->scale;
++        for(int gy = 0; gy < 5; gy++) {
++            for(int sy = 0; sy < t->scale; sy++) {
++                int y = t->y + gy * t->scale + sy - y0;
++                if(y < 0 || y >= h) continue;
++                for(int gx = 0; gx < 3; gx++) {
++                    if(!(FONT[g][gy] & (4 >> gx))) continue;
++                    for(int sx = 0; sx < t->scale; sx++) {
++                        int x = gx0 + gx * t->scale + sx;
++                        if(x >= 0 && x < W) buf[y * W + x] = t->color;
++                    }
++                }
++            }
++        }
++    }
++}
++
++// ---- world ----
++static uint16_t sky_row[H];
++static uint8_t far_hill[W], near_hill[W];
++
++static void build_sky(void) {
++    for(int y = 0; y < H; y++) { // deep blue at the top, warm pale near the horizon
++        float t = (float)y / GROUND_Y;
++        if(t > 1) t = 1;
++        sky_row[y] = rgb((int)(30 + 190 * t), (int)(80 + 140 * t), (int)(190 + 50 * t));
++    }
++}
++
++static void build_hills(float scroll) {
++    for(int x = 0; x < W; x++) {
++        float fx = x + scroll * 0.25f, nx = x + scroll * 0.6f;
++        far_hill[x] = (uint8_t)(92 + 9 * sinf(fx * 0.031f) + 5 * sinf(fx * 0.083f));
++        near_hill[x] = (uint8_t)(106 + 6 * sinf(nx * 0.047f + 1.3f) + 3 * sinf(nx * 0.13f));
++    }
++}
++
++static void reset(Game* g) {
++    g->y = H / 2.0f;
++    g->vy = 0;
++    g->score = 0;
++    g->state = StateReady;
++    for(int i = 0; i < PILLARS; i++) {
++        g->px[i] = W + 30 + i * SPACING;
++        g->gap_y[i] = 22 + rand() % (GROUND_Y - GAP - 34);
++        g->scored[i] = false;
++    }
++}
++
++static void step(Game* g) {
++    g->frame++;
++    if(g->state != StateOver) g->scroll += 2.0f;
++    if(g->state == StateReady) { // hover until the first flap
++        g->y = H / 2.0f + 3 * sinf(g->frame * 0.15f);
++        return;
++    }
++    if(g->state != StatePlay) return;
++    g->vy += 0.32f;
++    if(g->vy > 6) g->vy = 6;
++    g->y += g->vy;
++    if(g->y - HERO_R < 0) g->y = HERO_R, g->vy = 0;
++    if(g->y + HERO_R >= GROUND_Y) g->state = StateOver;
++    for(int i = 0; i < PILLARS; i++) {
++        g->px[i] -= 2.0f;
++        if(g->px[i] + PILLAR_W < 0) {
++            g->px[i] += PILLARS * SPACING;
++            g->gap_y[i] = 22 + rand() % (GROUND_Y - GAP - 34);
++            g->scored[i] = false;
++        }
++        bool in_x = HERO_X + HERO_R - 2 > g->px[i] && HERO_X - HERO_R + 2 < g->px[i] + PILLAR_W;
++        bool in_gap = g->y - HERO_R + 2 > g->gap_y[i] && g->y + HERO_R - 2 < g->gap_y[i] + GAP;
++        if(in_x && !in_gap) g->state = StateOver;
++        if(!g->scored[i] && g->px[i] + PILLAR_W < HERO_X - HERO_R) {
++            g->scored[i] = true;
++            g->score++;
++        }
++    }
++    if(g->state == StateOver && g->score > g->best) g->best = g->score;
++}
++
++// background + pillars for one band
++static void band_world(const Game* g, uint16_t* buf, int y0, int h) {
++    const uint16_t far_c = rgb(90, 120, 170), near_c = rgb(60, 140, 110);
++    const uint16_t grass = rgb(70, 170, 80), dirt_a = rgb(150, 105, 60), dirt_b = rgb(130, 90, 50);
++    for(int r = 0; r < h; r++) {
++        int y = y0 + r;
++        uint16_t* row = &buf[r * W];
++        for(int x = 0; x < W; x++) {
++            uint16_t c = sky_row[y];
++            if(y >= GROUND_Y) {
++                c = y < GROUND_Y + 3 ? grass :
++                    (((x + (int)g->scroll) / 8 + y / 4) & 1) ? dirt_a : dirt_b;
++            } else if(y >= near_hill[x]) {
++                c = near_c;
++            } else if(y >= far_hill[x]) {
++                c = far_c;
++            }
++            row[x] = c;
++        }
++        // clouds: soft white ellipses drifting slowly
++        for(int k = 0; k < 3; k++) {
++            int cx = (int)(k * 97 + 300 - fmodf(g->scroll * 0.15f, 380)) % 380 - 70;
++            int cy = 18 + k * 13;
++            int dy = y - cy;
++            if(dy < -6 || dy > 6) continue;
++            int half = (int)(22 * sqrtf(1 - (dy * dy) / 40.0f));
++            for(int x = cx - half; x <= cx + half; x++)
++                if(x >= 0 && x < W) row[x] = rgb(245, 248, 255);
++        }
++        // crystal pillars: violet-to-teal shading, bright edge, darker cap
++        for(int i = 0; i < PILLARS; i++) {
++            int x0 = (int)g->px[i];
++            bool in_gap = y >= g->gap_y[i] && y < g->gap_y[i] + GAP;
++            if(in_gap || y >= GROUND_Y || x0 >= W || x0 + PILLAR_W <= 0) continue;
++            bool cap = y >= g->gap_y[i] - 6 && y < g->gap_y[i] + GAP + 6;
++            for(int dx = cap ? -3 : 0; dx < PILLAR_W + (cap ? 3 : 0); dx++) {
++                int x = x0 + dx;
++                if(x < 0 || x >= W) continue;
++                int t = dx * 255 / PILLAR_W;
++                uint16_t c = cap ? rgb(90 + t / 3, 60, 170) : rgb(110 - t / 4, 80 + t / 2, 200 - t / 4);
++                if(dx == 2 || dx == 3) c = rgb(220, 240, 255); // shine stripe
++                row[x] = c;
++            }
++        }
++    }
++}
++
++// robot drone: silver body, cyan visor, orange antenna light, spinning rotor
++static void band_hero(const Game* g, uint16_t* buf, int y0, int h) {
++    int cy = (int)g->y;
++    bool rotor_a = (g->frame / 2) & 1;
++    for(int r = 0; r < h; r++) {
++        int y = y0 + r, dy = y - cy;
++        if(dy < -HERO_R - 5 || dy > HERO_R) continue;
++        uint16_t* row = &buf[r * W];
++        if(dy == -HERO_R - 4) { // rotor blade
++            int half = rotor_a ? 9 : 4;
++            for(int x = HERO_X - half; x <= HERO_X + half; x++) row[x] = rgb(60, 60, 70);
++            continue;
++        }
++        if(dy < -HERO_R) { // mast + light
++            row[HERO_X] = dy == -HERO_R - 3 ? rgb(255, 140, 40) : rgb(80, 80, 90);
++            continue;
++        }
++        int half = (int)sqrtf((float)(HERO_R * HERO_R - dy * dy));
++        for(int x = HERO_X - half; x <= HERO_X + half; x++) {
++            int dx = x - HERO_X;
++            uint16_t c = (dx + dy < -4) ? rgb(235, 240, 245) : rgb(170, 180, 195); // lit side
++            if(dy >= -3 && dy <= 0 && dx >= -1 && dx <= 5) c = rgb(40, 230, 240); // visor
++            if(dx == half || -dx == half) c = rgb(70, 75, 90);                     // outline
++            row[x] = c;
++        }
++    }
++}
++
++static void render(const Game* g, esp_lcd_panel_handle_t panel, uint16_t* buf) {
++    char score[8], best[16];
++    snprintf(score, sizeof(score), "%d", g->score);
++    snprintf(best, sizeof(best), "BEST %d", g->best);
++    const uint16_t white = rgb(255, 255, 255), shade = rgb(30, 40, 70);
++    Text texts[6];
++    int n = 0;
++    int sw = text_width(score, 3);
++    texts[n++] = (Text){score, W / 2 - sw / 2 + 2, 8, 3, shade}; // drop shadow
++    texts[n++] = (Text){score, W / 2 - sw / 2, 6, 3, white};
++    if(g->state == StateReady) {
++        const char* m = "PRESS A";
++        texts[n++] = (Text){m, W / 2 - text_width(m, 2) / 2, 92, 2, white};
++    } else if(g->state == StateOver) {
++        const char* m = "GAME OVER";
++        texts[n++] = (Text){m, W / 2 - text_width(m, 3) / 2, 40, 3, rgb(255, 220, 90)};
++        texts[n++] = (Text){best, W / 2 - text_width(best, 2) / 2, 66, 2, white};
++    }
++    furi_hal_spi_bus_lock();
++    for(int y0 = 0; y0 < H; y0 += BAND) {
++        int h = H - y0 < BAND ? H - y0 : BAND;
++        band_world(g, buf, y0, h);
++        band_hero(g, buf, y0, h);
++        for(int i = 0; i < n; i++) band_text(buf, y0, h, &texts[i]);
++        esp_lcd_panel_draw_bitmap(panel, 0, y0, W, y0 + h, buf);
++    }
++    furi_hal_spi_bus_unlock();
++}
++
++static void best_io(Game* g, bool save) {
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    File* f = storage_file_alloc(storage);
++    if(save) {
++        storage_common_mkdir(storage, EXT_PATH("apps_data"));
++        if(storage_file_open(f, BEST_FILE, FSAM_WRITE, FSOM_CREATE_ALWAYS))
++            storage_file_write(f, &g->best, sizeof(g->best));
++    } else if(storage_file_open(f, BEST_FILE, FSAM_READ, FSOM_OPEN_EXISTING)) {
++        storage_file_read(f, &g->best, sizeof(g->best));
++    }
++    storage_file_close(f);
++    storage_file_free(f);
++    furi_record_close(RECORD_STORAGE);
++}
++
++static void input_cb(const void* value, void* ctx) {
++    const InputEvent* e = value;
++    if(e->type == InputTypePress || e->type == InputTypeShort)
++        furi_message_queue_put(ctx, e, 0);
++}
++
++int32_t sky_hopper_color_app(void* p) {
++    UNUSED(p);
++    esp_lcd_panel_handle_t panel = furi_hal_display_get_panel_handle();
++    if(!panel || furi_hal_display_get_h_res() != W || furi_hal_display_get_v_res() != H)
++        return 0; // made for the Plus2's 240x135 panel
++    uint16_t* buf = heap_caps_malloc(W * BAND * sizeof(uint16_t), MALLOC_CAP_DMA);
++    if(!buf) return 0;
++
++    Game* g = malloc(sizeof(Game));
++    memset(g, 0, sizeof(Game));
++    srand(furi_get_tick());
++    best_io(g, false);
++    build_sky();
++    reset(g);
++
++    FuriMessageQueue* q = furi_message_queue_alloc(8, sizeof(InputEvent));
++    FuriPubSub* input = furi_record_open(RECORD_INPUT_EVENTS);
++    FuriPubSubSubscription* sub = furi_pubsub_subscribe(input, input_cb, q);
++    Gui* gui = furi_record_open(RECORD_GUI);
++    gui_direct_draw_acquire(gui);
++
++    int saved_best = g->best;
++    for(bool run = true; run;) {
++        uint32_t t0 = furi_get_tick();
++        InputEvent e;
++        while(furi_message_queue_get(q, &e, 0) == FuriStatusOk) {
++            if(e.key == InputKeyBack && e.type == InputTypeShort) run = false;
++            if(e.key == InputKeyOk && e.type == InputTypePress) {
++                if(g->state == StateOver && g->frame > 20) {
++                    reset(g);
++                } else if(g->state != StateOver) {
++                    g->state = StatePlay;
++                    g->vy = -4.4f; // flap
++                }
++            }
++        }
++        if(g->state == StateOver && g->best != saved_best) {
++            best_io(g, true);
++            saved_best = g->best;
++        }
++        step(g);
++        build_hills(g->scroll);
++        render(g, panel, buf);
++        uint32_t spent = furi_get_tick() - t0, frame = furi_ms_to_ticks(33); // ~30 fps
++        if(spent < frame) furi_delay_tick(frame - spent);
++    }
++
++    gui_direct_draw_release(gui);
++    furi_hal_display_top_bar_invalidate(); // we drew over the top bar
++    furi_record_close(RECORD_GUI);
++    furi_pubsub_unsubscribe(input, sub);
++    furi_record_close(RECORD_INPUT_EVENTS);
++    furi_message_queue_free(q);
++    heap_caps_free(buf);
++    free(g);
++    return 0;
++}
 diff --git a/components/furi/core/log.h b/components/furi/core/log.h
 index e4909cd..1744c2f 100644
 --- a/components/furi/core/log.h
@@ -2210,53 +2597,55 @@ index 246f249..681b665 100644
  #define BOARD_HAS_VIBRO         0
  #define BOARD_HAS_SPEAKER       1
 diff --git a/components/furi_hal/furi_hal_display.c b/components/furi_hal/furi_hal_display.c
-index 5145e5dc148fe6ce6761608568e43e9633328484..25bd06cc29b0a3d940aa384b8fe0a7df371b0033 100644
+index 5145e5dc148fe6ce6761608568e43e9633328484..a382b1487851ef638eb26084a2c8f2ffec0421f5 100644
 GIT binary patch
-delta 3677
-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
-Rx95LrwaYi1?^^%8|3AC_PF4T_
+delta 3834
+zcmbtX>u%%56>fk{77)^)Xj-Ib)Ap=g+vMsJNw#(q%XZ;dPS(ISYuHB8z%aO!G`t`b
+zNsuF3>c$}QyG8%#Et)?m@;eXFH^>tNDEb2Z&dg93cM}wdAV{2<Gv|K3bNJO~-~IKK
+zufDujH0YC12K4^3!?T{#J2^jndibex@$A%j|L}}tASew7a-0duLz$B+)m}f5G8vH@
+z4=ePL+$f?vbwQIQH#sFS$t0z|7$hSB8l2y_)4Y!TT)J|cQ{T<V8brz9GYYC$Nhz`^
+zZP+y$X6{YQJOjZZ6AC5ef#E8ynJgb<Lc~-jZyZHt;ihR$K{yojK@_H`$hM%y&9c14
+z?8|$PN1;bU;f1jnS}!%&rp?WlyP~qLFVde5&ptf)$oZ74r$;^KW9RJn9J-tz9X>to
+zIZuvHK74XvSJp+8i`lpLc3xW-@i6qhe)H8=e_E{n81Z2|h{iB*&l_i9BRHt6&v$Y;
+z43pI@CUOEdaxyvKlgc~qP_aGfAes{qksnRdAg>`*DrN+aQGY50S$#OXP5TrHPtqWX
+z#-rG-aM;2DmT@j=9LDlpM-p-bDdK$a?4ygztIN(6F1@G_J}(~Es8fC)-`40wyGD;{
+zRNxO^wF8nC9&5C7cZ0Y2j^?20TG)UA&HBz<0N>L*nAk8<LYMf17k>>!0hS=-U$dh(
+zj6?|N)ZfzraDZJX3o#und_$i!)wcQ7C%elh5P)k<eNwI5cISz6QD}#$RH61_UvD4w
+zK8EkC9pt|8tRl48@NG&bI%ZU*mRh)Jr3?$=!3Bq+a#UQcL4f)i*d`pIXAS6JpSFtT
+z7N_@s_ON(w%ce}Auw!i0X{))_Rc6fh_Cd6<MSrALlXgMF>s_^O&DT}6Zev|<bt|_j
+z%X+BboSx^;33??8EpnNKsi2}i_B<q-rBLE>3MWpR)xf62)1cyJHX}qP!`Nq}VVKY<
+zNRvis?R63kOLL`|NK0oW+x(D_((H{%4QTZjfh1)i<}oNrkLVl5ZAe>dUek5z{ICD1
+ztzF|KnboC-d6)8PwMG-F?w6rL@Ji-f0nFM5<CUmDJ6khSB%bBd9yM*QDi}N#-OB8r
+z%{Pk-_nKYGa2VjPT3u#5XFg@MEy%I0X%k5S&(&ER(xuc%rO!g35xRP3kMGdupOZi3
+z6zSM>uuz9@lpnTTSvAq>`4i~3eaBZ_@@L;R-`YXOErWx9b?Hy9Xp@us;D9XLT~*Sy
+z?aJ)mzx#!q`TfqLj)Oe8%)r}#>L(|?izl!V4kv%YIMbi~qxGO*-EK|RosRQB41r;~
+zWhFPrvs`4?;XsgZ2LYu?6zx)+&|&WgiSG_`@-nnA?r<3}8uY0v1I9^9b-fi9xjRZD
+zk?U-B(bd4E;6}$iksFN+n5Vszr4b-A5_7aPsgMq&a^NDH4P8G;qB37Nmwm2*eezs1
+zlI}~Xi;_HWuZ2@K(I320-cVh3&YclP$-z!0QdboQ+`{F@y&R7*3Jv~(<&}ymK=hZ{
+z<Lx)vFbkqHCycM%C>**{SbSdQtg(7o-t3DVAc1cAR@qD7mKrG+l(ygDp#6qlozRAF
+zNesoy$CdLto{<?>8DQ%7u=q%gAKd03xtu^K3;jSgW?#Ji%Yv15jD0IcY4})D9pa5b
+za|JccibV^mRb6{<+C_+*8XDtt?=E!nc6=cn_NxSmwK<dqLzoAt5$f{YD{TQDwDozM
+zW(Xp1pKa6tn3xr2thJ41d%Vj(YZ$m>BS^-XdKdwQq%Z=CIT!ZMoCz-!k9=diu>l69
+zG3XR))itz&HEhBUh7GXbfpN}qG;HPb%O+Rz)=##&oP%*91J3%9aPx6ipq!^d?yB*R
+z3pXB*`XW<JN_&^{l+|$<lUA^zPCI}@1$F2>k%%p&_5!ZB*;elWrQ!@Vk~o^84vHM8
+zppu{K;3mMxnPZ;SDqe?q*hh84_}GV{R*o9X>HPGBWafGvhNUVX2PkAKw&eiDL5tj6
+zI*Z7uC9AgxpPIG`1s$zNXkv=Q^K1H{@9QYTv&ONyywKVoz}mqmE#tnBq~_Z4l!cYN
+zIGQ{Z7!lm%J>NmoP0)xoH<j{$S*;`h3D~QTjbV(zdSqBByt3eR#W4|UmQJmOO2{0}
+zPLn3f$6CMVDrB1LT)R@aY-zvGI9Y1dttgebUCk!|9HXJ4P43NycV5oipZ(z|z~NH&
+zS48I*XD6q}W|l`<ub%JH%DL&<p%xNy*S^!ax)gE~U+QfkXT5Q=v4mY@qN#@(UAa3v
+zBGo7`Ub;)AJ%!)bQ3P|+*>^4fjZ*7BtL@p}+P}W928EzD`&YYr|JJ;sG`8P*8*;x7
+z!*6Ge?cY9AuV?=UR%?`;W1wD^_`txcUxsG&?O%P}`1$c~+#mBo#J=FqFwE1)ojNOU
+Y4S(rZuy5*b&;DL-mak#o)c<q;zb%-F4gdfE
 
 delta 43
-ycmZ41#ke7R!)lhvlUU6sTd)~zE@WfjoxIdZY_qkZtMueYHr_xiz1iRPIy(SnVh}F?
+zcmV+`0M!5Pivh4}u&V@<k_9)DI0iDaaRvkplf^_9vjZYU8<YG!8<WL7FthwU@&|LS
+B5f1<W
 
 diff --git a/components/furi_hal/furi_hal_display.h b/components/furi_hal/furi_hal_display.h
-index 5c54a9b..ff6d80b 100644
+index 5c54a9b..d90d4a8 100644
 --- a/components/furi_hal/furi_hal_display.h
 +++ b/components/furi_hal/furi_hal_display.h
-@@ -73,3 +73,7 @@ esp_lcd_panel_handle_t furi_hal_display_get_panel_handle(void);
+@@ -73,3 +73,10 @@ esp_lcd_panel_handle_t furi_hal_display_get_panel_handle(void);
  #ifdef __cplusplus
  }
  #endif
@@ -2264,6 +2653,9 @@ index 5c54a9b..ff6d80b 100644
 +/** Battery value shown in the always-on top bar (boards with BOARD_DISPLAY_TOP_BAR).
 + *  Called by the power service on every poll. */
 +void furi_hal_display_set_battery(uint8_t pct, bool charging);
++
++/** Force the always-on top bar to repaint (call after drawing over the whole panel). */
++void furi_hal_display_top_bar_invalidate(void);
 diff --git a/components/furi_hal/furi_hal_rtc.c b/components/furi_hal/furi_hal_rtc.c
 index da51adc..8bd82a6 100644
 --- a/components/furi_hal/furi_hal_rtc.c
@@ -2684,10 +3076,10 @@ index 0000000..4ec0f4c
 @@ -0,0 +1 @@
 +// Empty on purpose: keeps IRremoteESP8266 (UNIT_TEST) from pulling in iostream.
 diff --git a/fam_config.py b/fam_config.py
-index 36c143f..4d6a565 100644
+index 36c143f..f7bfc7b 100644
 --- a/fam_config.py
 +++ b/fam_config.py
-@@ -78,6 +78,22 @@ APPS = [
+@@ -78,6 +78,23 @@ APPS = [
      "js_infrared",
      "js_blebeacon",
      "qflipper_app",
@@ -2697,6 +3089,7 @@ index 36c143f..4d6a565 100644
 +    # "hid_ble" (Bluetooth Remote) not ported to this fork: needs profiles/serial_profile.h
 +    "snake",
 +    "sky_hopper",
++    "sky_hopper_color",
 +    "brick_breaker",
 +    "mines",
 +    "tic_tac_toe",
@@ -2710,7 +3103,7 @@ index 36c143f..4d6a565 100644
      # js_serial, js_gpio, js_i2c, js_spi excluded - need HAL porting
  ]
  
-@@ -117,6 +133,14 @@ if _board in _boards_without_subghz:
+@@ -117,6 +134,14 @@ if _board in _boards_without_subghz:
  if _board in _boards_without_nrf24:
      APPS = [a for a in APPS if a != "nrf24"]
  
