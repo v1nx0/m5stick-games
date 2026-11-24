@@ -1350,7 +1350,7 @@ index 0000000..6d25168
 +    return 0;
 +}
 diff --git a/fam_config.py b/fam_config.py
-index 36c143f..dfdc345 100644
+index 36c143f..f10775b 100644
 --- a/fam_config.py
 +++ b/fam_config.py
 @@ -78,6 +78,22 @@ APPS = [
@@ -1360,7 +1360,7 @@ index 36c143f..dfdc345 100644
 +    # game pack (built in: no SD card for FAPs on M5StickC Plus2)
 +    "games_menu",
 +    "ir_tools",
-+    "hid_ble",  # Bluetooth Remote: presentation clicker, media keys, mouse
++    # "hid_ble" (Bluetooth Remote) not ported to this fork: needs profiles/serial_profile.h
 +    "snake",
 +    "sky_hopper",
 +    "brick_breaker",
