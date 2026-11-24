@@ -2132,10 +2132,10 @@ index 0000000..3447ee8
 +#endif
 diff --git a/components/irac/irac_glue.cpp b/components/irac/irac_glue.cpp
 new file mode 100644
-index 0000000..eeabe14
+index 0000000..7b82423
 --- /dev/null
 +++ b/components/irac/irac_glue.cpp
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,83 @@
 +// C API over IRremoteESP8266's IRac: one common AC state (power/mode/temp/fan) mapped
 +// onto every AC protocol by the library itself, captured via shim/IRsend_test.h.
 +#include "irac.h"
@@ -2146,6 +2146,7 @@ index 0000000..eeabe14
 +size_t irac_cap_size = 0, irac_cap_n = 0;
 +uint32_t irac_cap_freq = 38000;
 +bool irac_cap_overflow = false;
++decode_results IRsendTest::capture;
 +
 +namespace {
 +struct AcBrand {
@@ -2241,16 +2242,17 @@ index 0000000..31138fd
 +}
 diff --git a/components/irac/shim/IRsend_test.h b/components/irac/shim/IRsend_test.h
 new file mode 100644
-index 0000000..c18dabe
+index 0000000..b0885d2
 --- /dev/null
 +++ b/components/irac/shim/IRsend_test.h
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,52 @@
 +// Replaces IRremoteESP8266's test sender: under UNIT_TEST every AC class holds an
 +// IRsendTest member, so overriding mark()/space() here captures the exact timings the
 +// library would send. The buffer is global (AC objects live on the stack).
 +#pragma once
 +#include <stddef.h>
 +#include <stdint.h>
++#include "IRrecv.h"
 +#include "IRsend.h"
 +#include "IRtimer.h"
 +
@@ -2270,6 +2272,13 @@ index 0000000..c18dabe
 +    }
 +    void space(uint32_t usec) override {
 +        push(false, usec);
++    }
++
++    // IRac.cpp's unit-test hook touches these; it only runs with a test receiver
++    // attached (_utReceiver), never here. Static so AC objects stay small on the stack.
++    static decode_results capture;
++    void makeDecodeResult(uint16_t offset = 0) {
++        (void)offset;
 +    }
 +
 +private:
