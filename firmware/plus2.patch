@@ -813,7 +813,7 @@ index d94c9e2..489100b 100644
 +    const WlanSdUpdate* u, uint32_t idx, char* rel, size_t rel_sz, uint32_t* size, uint8_t* src);
 +void wlan_sd_update_start_mode(WlanSdUpdate* u);
 diff --git a/applications/services/power/power_service/power.c b/applications/services/power/power_service/power.c
-index ca752a2..c9589b3 100644
+index ca752a2..e9aae8a 100644
 --- a/applications/services/power/power_service/power.c
 +++ b/applications/services/power/power_service/power.c
 @@ -1,4 +1,5 @@
@@ -834,10 +834,13 @@ index ca752a2..c9589b3 100644
      canvas_draw_icon(canvas, 0, 0, &I_Battery_26x8);
  
      if(power->info.gauge_is_ok) {
-@@ -606,6 +612,8 @@ static void power_tick_callback(void* context) {
+@@ -606,6 +612,11 @@ static void power_tick_callback(void* context) {
      power_check_battery_level_change(power);
      // charge supress arm/disarm
      power_charge_supress(power);
++    // always-on top bar (M5StickC Plus2) shows the same value on every screen
++    if(power->info.gauge_is_ok)
++        furi_hal_display_set_battery(power->info.charge, power->state == PowerStateCharging);
 +    // Battery icon "OFF": hide the view port so no empty slot stays in the status bar
 +    view_port_enabled_set(power->battery_view_port, momentum_settings.battery_icon != BatteryIconOff);
      // Update battery view port
@@ -1425,10 +1428,18 @@ index 234db6b..63335ef 100644
  
  # HID backend: TinyUSB on SoCs with USB-OTG, stub elsewhere.
 diff --git a/components/furi_hal/boards/board_m5stickcplus2.h b/components/furi_hal/boards/board_m5stickcplus2.h
-index 246f249..e06a561 100644
+index 246f249..681b665 100644
 --- a/components/furi_hal/boards/board_m5stickcplus2.h
 +++ b/components/furi_hal/boards/board_m5stickcplus2.h
-@@ -82,6 +82,7 @@
+@@ -27,6 +27,7 @@
+ 
+ #define BOARD_LCD_H_RES         240
+ #define BOARD_LCD_V_RES         135
++#define BOARD_DISPLAY_TOP_BAR   1 /* spare 15 rows on top: always-on clock + battery % */
+ #define BOARD_LCD_SPI_HOST      SPI2_HOST
+ #define BOARD_LCD_SPI_FREQ_HZ   (40 * 1000 * 1000)
+ #define BOARD_LCD_CMD_BITS      8
+@@ -82,6 +83,7 @@
  #define BOARD_HAS_SD_CARD       0
  #define BOARD_HAS_BLE           1
  #define BOARD_HAS_IMU           1
@@ -1436,6 +1447,57 @@ index 246f249..e06a561 100644
  #define BOARD_HAS_RGB_LED       0
  #define BOARD_HAS_VIBRO         0
  #define BOARD_HAS_SPEAKER       1
+diff --git a/components/furi_hal/furi_hal_display.c b/components/furi_hal/furi_hal_display.c
+index 5145e5dc148fe6ce6761608568e43e9633328484..9ec1d2cba5bc6ea7a203810101f8ef17b896c0a8 100644
+GIT binary patch
+delta 3192
+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
+QM!(jK;u8F(_RocX0mn?U<p2Nx
+
+delta 43
+zcmccA#<(GS!)lhvlUU6sTd)~zE@WfjovbV+wmDtiReExQwe)07YlF=R)}Pn`RX`4@
+
+diff --git a/components/furi_hal/furi_hal_display.h b/components/furi_hal/furi_hal_display.h
+index 5c54a9b..ff6d80b 100644
+--- a/components/furi_hal/furi_hal_display.h
++++ b/components/furi_hal/furi_hal_display.h
+@@ -73,3 +73,7 @@ esp_lcd_panel_handle_t furi_hal_display_get_panel_handle(void);
+ #ifdef __cplusplus
+ }
+ #endif
++
++/** Battery value shown in the always-on top bar (boards with BOARD_DISPLAY_TOP_BAR).
++ *  Called by the power service on every poll. */
++void furi_hal_display_set_battery(uint8_t pct, bool charging);
 diff --git a/components/furi_hal/furi_hal_rtc.c b/components/furi_hal/furi_hal_rtc.c
 index da51adc..8bd82a6 100644
 --- a/components/furi_hal/furi_hal_rtc.c
