@@ -7,7 +7,7 @@ for name, _ in parts:
 json.dump({
     "name": "Flipper Zero ESP32 port - M5StickC Plus2 (App Store + games + AC On)",
     "version": sys.argv[1] if len(sys.argv) > 1 else "dev",
-    "new_install_prompt_erase": True,
+    "new_install_prompt_erase": False,  # never offer a full-chip erase: it wipes the stick's files
     "builds": [{"chipFamily": "ESP32",
                 "parts": [{"path": n, "offset": o} for n, o in parts]}],
 }, open("docs/firmware/manifest.json", "w"), indent=2)
