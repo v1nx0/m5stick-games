@@ -2,7 +2,7 @@ Executing action: size
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2df900 bytes. Smallest app partition is 0x300000 bytes. 0x20700 bytes (4%) free.
+furi_esp32.bin binary size 0x2dfb20 bytes. Smallest app partition is 0x300000 bytes. 0x204e0 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -16,16 +16,16 @@ Executing "ninja size"...
 ┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
 ┃ Memory Type/Section   ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
-│ Flash Code            │      2356898 │    70.52 │         985406 │       3342304 │
-│    .text              │      2356898 │    70.52 │                │               │
-│ Flash Data            │       511428 │    12.19 │        3682844 │       4194272 │
-│    .rodata            │       511172 │    12.19 │                │               │
+│ Flash Code            │      2357398 │    70.53 │         984906 │       3342304 │
+│    .text              │      2357398 │    70.53 │                │               │
+│ Flash Data            │       511476 │    12.19 │        3682796 │       4194272 │
+│    .rodata            │       511220 │    12.19 │                │               │
 │    .appdesc           │          256 │     0.01 │                │               │
 │ IRAM                  │       119075 │    90.85 │          11997 │        131072 │
 │    .text              │       118047 │    90.06 │                │               │
 │    .vectors           │         1027 │     0.78 │                │               │
-│ DRAM                  │        88024 │    70.66 │          36556 │        124580 │
-│    .bss               │        62816 │    50.42 │                │               │
+│ DRAM                  │        88048 │    70.68 │          36532 │        124580 │
+│    .bss               │        62840 │    50.44 │                │               │
 │    .data              │        25208 │    20.23 │                │               │
 │ SPI DRAM              │        48792 │     1.16 │        4145512 │       4194304 │
 │    .bss               │        48792 │     1.16 │                │               │
@@ -35,12 +35,12 @@ Executing "ninja size"...
 │ RTC SLOW              │           24 │     0.29 │           8168 │          8192 │
 │    .rtc_slow_reserved │           24 │     0.29 │                │               │
 └───────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
-Total image size: 3012735 bytes (.bin may be padded larger)
+Total image size: 3013283 bytes (.bin may be padded larger)
 Executing action: size-components
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2df900 bytes. Smallest app partition is 0x300000 bytes. 0x20700 bytes (4%) free.
+furi_esp32.bin binary size 0x2dfb20 bytes. Smallest app partition is 0x300000 bytes. 0x204e0 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -54,12 +54,12 @@ Executing "ninja size-components"...
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
 ┃ Archive File             ┃ Total Size ┃  DRAM ┃  .bss ┃ .data ┃  IRAM ┃ .text ┃ .vectors ┃ Flash Code ┃  .text ┃ Flash Data ┃ .rodata ┃ .appdesc ┃ SPI DRAM ┃  .bss ┃ RTC FAST ┃ .force_fast ┃ .text ┃ RTC SLOW ┃ .rtc_slow_reserved ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-│ libmain.a                │     598563 │ 48091 │ 46553 │  1538 │  1089 │  1089 │        0 │     483014 │ 483014 │      46145 │   46145 │        0 │    20224 │ 20224 │        0 │           0 │     0 │        0 │                  0 │
-│ libbt.a                  │     300439 │  4731 │     0 │  4731 │  1503 │  1503 │        0 │     263980 │ 263980 │      16854 │   16854 │        0 │    13371 │ 13371 │        0 │           0 │     0 │        0 │                  0 │
-│ libefuse.a               │     275589 │    64 │     4 │    60 │     0 │     0 │        0 │       1162 │   1162 │     274363 │  274363 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libmain.a                │     599144 │ 48123 │ 46581 │  1542 │  1089 │  1089 │        0 │     483563 │ 483563 │      46145 │   46145 │        0 │    20224 │ 20224 │        0 │           0 │     0 │        0 │                  0 │
+│ libbt.a                  │     300451 │  4731 │     0 │  4731 │  1503 │  1503 │        0 │     263992 │ 263992 │      16854 │   16854 │        0 │    13371 │ 13371 │        0 │           0 │     0 │        0 │                  0 │
+│ libefuse.a               │     275637 │    64 │     4 │    60 │     0 │     0 │        0 │       1162 │   1162 │     274411 │  274411 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libnet80211.a            │     150534 │  1075 │     0 │  1075 │     0 │     0 │        0 │     129952 │ 129952 │      11017 │   11017 │        0 │     8490 │  8490 │        0 │           0 │     0 │        0 │                  0 │
-│ libsubghz.a              │     147796 │    53 │    53 │     0 │     0 │     0 │        0 │     139538 │ 139538 │       8205 │    8205 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ liblwip.a                │     110566 │    16 │     0 │    16 │     0 │     0 │        0 │     102739 │ 102739 │       4037 │    4037 │        0 │     3774 │  3774 │        0 │           0 │     0 │        0 │                  0 │
+│ libsubghz.a              │     147768 │    53 │    53 │     0 │     0 │     0 │        0 │     139510 │ 139510 │       8205 │    8205 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ liblwip.a                │     110554 │    16 │     0 │    16 │     0 │     0 │        0 │     102727 │ 102727 │       4037 │    4037 │        0 │     3774 │  3774 │        0 │           0 │     0 │        0 │                  0 │
 │ libnfc.a                 │     105104 │     0 │     0 │     0 │     0 │     0 │        0 │     100037 │ 100037 │       5067 │    5067 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmbedcrypto.a          │      96874 │   153 │    81 │    72 │     0 │     0 │        0 │      86506 │  86506 │      10215 │   10215 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libirac.a                │      92670 │    81 │    77 │     4 │     0 │     0 │        0 │      80013 │  80013 │      12576 │   12576 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
@@ -71,9 +71,9 @@ Executing "ninja size-components"...
 │ libfuri.a                │      47792 │    37 │    29 │     8 │     0 │     0 │        0 │      43443 │  43443 │       4312 │    4312 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmjs.a                 │      45026 │     0 │     0 │     0 │     0 │     0 │        0 │      44324 │  44324 │        702 │     702 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libphy.a                 │      44530 │  1221 │   637 │   584 │  8966 │  8966 │        0 │      34343 │  34343 │          0 │       0 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libfuri_hal.a            │      40124 │  7087 │  6592 │   495 │   248 │   248 │        0 │      32119 │  32119 │        670 │     670 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libfuri_hal.a            │      40120 │  7087 │  6592 │   495 │   248 │   248 │        0 │      32115 │  32115 │        670 │     670 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libassets.a              │      34577 │     0 │     0 │     0 │     0 │     0 │        0 │          0 │      0 │      34577 │   34577 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libtoolbox.a             │      30202 │   312 │     0 │   312 │     0 │     0 │        0 │      27554 │  27554 │       2336 │    2336 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libtoolbox.a             │      30194 │   312 │     0 │   312 │     0 │     0 │        0 │      27546 │  27546 │       2336 │    2336 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_hw_support.a      │      29352 │   577 │   153 │   424 │ 13200 │ 13200 │        0 │      14025 │  14025 │       1399 │    1399 │        0 │        0 │     0 │      127 │          28 │    99 │       24 │                 24 │
 │ libmbedtls.a             │      29296 │   266 │   240 │    26 │     0 │     0 │        0 │      27116 │  27116 │       1914 │    1914 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libfreertos.a            │      27479 │  2572 │  1004 │  1568 │  6257 │  6257 │        0 │      16340 │  16340 │       2310 │    2310 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
@@ -81,7 +81,7 @@ Executing "ninja size-components"...
 │ libm.a                   │      24213 │     0 │     0 │     0 │     0 │     0 │        0 │      22485 │  22485 │       1728 │    1728 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ liblittlefs.a            │      23730 │  1149 │  1141 │     8 │     0 │     0 │        0 │      22155 │  22155 │        426 │     426 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libflipper_application.a │      22955 │    17 │    17 │     0 │     0 │     0 │        0 │      15621 │  15621 │       7317 │    7317 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libinfrared.a            │      20168 │    17 │    17 │     0 │     0 │     0 │        0 │      17476 │  17476 │       2675 │    2675 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libinfrared.a            │      20152 │    17 │    17 │     0 │     0 │     0 │        0 │      17460 │  17460 │       2675 │    2675 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libarchive.a             │      18522 │     0 │     0 │     0 │     0 │     0 │        0 │      17670 │  17670 │        852 │     852 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libnvs_flash.a           │      15233 │    28 │    28 │     0 │     0 │     0 │        0 │      14953 │  14953 │        252 │     252 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libhttp_parser.a         │      14846 │     0 │     0 │     0 │     0 │     0 │        0 │      14094 │  14094 │        752 │     752 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
