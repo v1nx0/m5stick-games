@@ -45,6 +45,10 @@ jobs:
               | sort -u | head -30 | sed 's/^/::error::/'
             exit 1
           fi
+          # where the flash goes (to find space for new features)
+          idf.py -B build_esp32 size > ../size-total.txt 2>&1 || true
+          idf.py -B build_esp32 size-components > ../size-components.txt 2>&1 || true
+          grep -iE "total image size|flash code|flash rodata" ../size-total.txt | sed 's/^/::notice::/' || true
 
       - name: Build every game as a .fap (for the App Store)
         run: |
@@ -71,12 +75,13 @@ jobs:
           find $B -maxdepth 2 -name '*.bin' -printf '%s %p\n'
           cp $B/bootloader/bootloader.bin $B/partition_table/partition-table.bin $B/furi_esp32.bin docs/firmware/
           python3 tools/make_flasher_manifest.py "${GITHUB_SHA::7}"
+          cat size-total.txt size-components.txt > firmware/size-report.txt 2>/dev/null || true
 
       - name: Publish apps/ + Manifest + docs/firmware
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add apps Manifest docs/firmware
+          git add apps Manifest docs/firmware firmware/size-report.txt
           git diff --cached --quiet || git commit -m "chore: build firmware + games [skip ci]"
           git push
