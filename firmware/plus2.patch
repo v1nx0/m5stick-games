@@ -1,0 +1,720 @@
+diff --git a/applications/main/infrared/scenes/infrared_scene_universal_ac.c b/applications/main/infrared/scenes/infrared_scene_universal_ac.c
+index 15c4b8d..b7f4075 100644
+--- a/applications/main/infrared/scenes/infrared_scene_universal_ac.c
++++ b/applications/main/infrared/scenes/infrared_scene_universal_ac.c
+@@ -9,33 +9,48 @@ void infrared_scene_universal_ac_on_enter(void* context) {
+ 
+     infrared_brute_force_set_db_filename(brute_force, EXT_PATH("infrared/assets/ac.ir"));
+ 
+-    button_panel_reserve(button_panel, 2, 3);
++    // Top row: Off / On / Dry (3 across), then Cool and Heat columns below.
++    button_panel_reserve(button_panel, 3, 3);
+     uint32_t i = 0;
+     button_panel_add_item(
+         button_panel,
+         i,
+         0,
+         0,
+-        6,
++        2,
+         15,
+         &I_off_19x20,
+         &I_off_hover_19x20,
+         infrared_scene_universal_common_item_callback,
+         context);
+-    button_panel_add_icon(button_panel, 10, 37, &I_off_text_12x5);
++    button_panel_add_icon(button_panel, 5, 37, &I_off_text_12x5);
+     infrared_brute_force_add_record(brute_force, i++, "Off");
++    // "On" entries in ac.ir reuse each model's Cool_lo state frame
+     button_panel_add_item(
+         button_panel,
+         i,
+         1,
+         0,
+-        39,
++        23,
++        15,
++        &I_off_19x20,
++        &I_off_hover_19x20,
++        infrared_scene_universal_common_item_callback,
++        context);
++    button_panel_add_label(button_panel, 27, 43, FontSecondary, "ON");
++    infrared_brute_force_add_record(brute_force, i++, "On");
++    button_panel_add_item(
++        button_panel,
++        i,
++        2,
++        0,
++        44,
+         15,
+         &I_dry_19x20,
+         &I_dry_hover_19x20,
+         infrared_scene_universal_common_item_callback,
+         context);
+-    button_panel_add_icon(button_panel, 41, 37, &I_dry_text_15x5);
++    button_panel_add_icon(button_panel, 46, 37, &I_dry_text_15x5);
+     infrared_brute_force_add_record(brute_force, i++, "Dh");
+     button_panel_add_item(
+         button_panel,
+diff --git a/applications/main/wlan_app/scenes/scene_app_store.c b/applications/main/wlan_app/scenes/scene_app_store.c
+new file mode 100644
+index 0000000..2f2015b
+--- /dev/null
++++ b/applications/main/wlan_app/scenes/scene_app_store.c
+@@ -0,0 +1,149 @@
++#include "../wlan_app.h"
++#include "../wlan_sd_update.h"
++#include <storage/storage.h>
++
++// App Store: lists every FAP the release server publishes (files.txt, the same
++// manifest the SD updater uses) and installs a picked one to /ext/<path>.
++// shortcut: no uninstall/search; uses Archive to delete, add if users ask.
++
++typedef enum { StoreFetching, StoreList, StoreInstalling, StoreMsg } StoreState;
++#define STORE_EVT_BASE 0x5000u
++
++static void store_set(WlanApp* app, StoreState s) {
++    scene_manager_set_scene_state(app->scene_manager, WlanAppSceneAppStore, s);
++}
++static StoreState store_get(WlanApp* app) {
++    return (StoreState)scene_manager_get_scene_state(app->scene_manager, WlanAppSceneAppStore);
++}
++
++static void store_item_cb(void* ctx, uint32_t idx) {
++    WlanApp* app = ctx;
++    view_dispatcher_send_custom_event(app->view_dispatcher, STORE_EVT_BASE + idx);
++}
++
++static void store_progress(WlanApp* app, const char* status) {
++    wlan_sd_update_view_update(
++        app->view_sd_update, status, wlan_sd_update_get_percent(app->sd_update), 0, 0,
++        wlan_sd_update_get_current_file(app->sd_update),
++        wlan_sd_update_get_speed_kbps(app->sd_update));
++    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewSdUpdate);
++}
++
++static void store_show_list(WlanApp* app) {
++    store_set(app, StoreList);
++    submenu_reset(app->submenu);
++    submenu_set_header(app->submenu, "App Store");
++    Storage* storage = furi_record_open(RECORD_STORAGE);
++    char rel[160], label[64], dest[176];
++    uint32_t size;
++    for(uint32_t i = 0; wlan_sd_update_catalog_get(app->sd_update, i, rel, sizeof(rel), &size, NULL); i++) {
++        snprintf(dest, sizeof(dest), "/ext/%s", rel);
++        bool have = storage_common_stat(storage, dest, NULL) == FSE_OK;
++        // "* Games/tetris 11k" -- '*' marks already installed
++        snprintf(
++            label, sizeof(label), "%s%.*s %luk", have ? "* " : "", (int)(strlen(rel) - 9),
++            rel + 5, (unsigned long)(size / 1024));
++        submenu_add_item(app->submenu, label, i, store_item_cb, app);
++    }
++    furi_record_close(RECORD_STORAGE);
++    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewSubmenu);
++}
++
++static void store_msg_cb(void* ctx) {
++    WlanApp* app = ctx;
++    view_dispatcher_send_custom_event(app->view_dispatcher, STORE_EVT_BASE - 1);
++}
++
++static void store_msg(WlanApp* app, const char* head, const char* text) {
++    store_set(app, StoreMsg);
++    popup_reset(app->popup);
++    popup_set_header(app->popup, head, 64, 10, AlignCenter, AlignTop);
++    popup_set_text(app->popup, text, 64, 36, AlignCenter, AlignCenter);
++    popup_set_context(app->popup, app);
++    popup_set_callback(app->popup, store_msg_cb);
++    popup_set_timeout(app->popup, 1500);
++    popup_enable_timeout(app->popup);
++    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewPopup);
++}
++
++static void store_leave(WlanApp* app) {
++    wlan_sd_update_cancel(app->sd_update);
++    if(scene_manager_search_and_switch_to_previous_scene(app->scene_manager, WlanAppSceneMain))
++        return;
++    scene_manager_stop(app->scene_manager);
++    view_dispatcher_stop(app->view_dispatcher);
++}
++
++void wlan_app_scene_app_store_on_enter(void* context) {
++    WlanApp* app = context;
++    app->store_flow = false;
++    store_set(app, StoreFetching);
++    wlan_sd_update_fetch_catalog(app->sd_update);
++    store_progress(app, "Loading catalog");
++}
++
++bool wlan_app_scene_app_store_on_event(void* context, SceneManagerEvent event) {
++    WlanApp* app = context;
++    StoreState st = store_get(app);
++
++    if(event.type == SceneManagerEventTypeBack) {
++        if(st == StoreInstalling) return true; // let the download finish
++        store_leave(app);
++        return true;
++    }
++    if(event.type == SceneManagerEventTypeCustom) {
++        if(event.event == WlanAppCustomEventUpdateSdCancel) {
++            if(st == StoreFetching) store_leave(app);
++            return true;
++        }
++        if(event.event == STORE_EVT_BASE - 1) {
++            char tmp[160];
++            if(!wlan_sd_update_catalog_get(app->sd_update, 0, tmp, sizeof(tmp), NULL, NULL)) {
++                store_leave(app);
++            } else {
++                store_show_list(app);
++            }
++            return true;
++        }
++        if(event.event >= STORE_EVT_BASE && st == StoreList) {
++            char rel[160];
++            uint8_t src = 0;
++            if(wlan_sd_update_catalog_get(
++                   app->sd_update, event.event - STORE_EVT_BASE, rel, sizeof(rel), NULL, &src)) {
++                store_set(app, StoreInstalling);
++                wlan_sd_update_install(app->sd_update, rel, src);
++                store_progress(app, "Installing");
++            }
++            return true;
++        }
++    } else if(event.type == SceneManagerEventTypeTick) {
++        if(st != StoreFetching && st != StoreInstalling) return false;
++        // phase is set before running clears; acting earlier made the next
++        // install a no-op that still reported "Installed"
++        if(wlan_sd_update_is_running(app->sd_update)) {
++            store_progress(app, st == StoreFetching ? "Loading catalog" : "Installing");
++            return false;
++        }
++        WlanSdUpdatePhase ph = wlan_sd_update_get_phase(app->sd_update);
++        if(ph == WlanSdUpdateDone) {
++            char tmp[160];
++            if(st == StoreFetching && !wlan_sd_update_catalog_get(app->sd_update, 0, tmp, sizeof(tmp), NULL, NULL))
++                store_msg(app, "App Store", "No apps on server yet"); // timeout leaves (empty catalog)
++            else if(st == StoreFetching)
++                store_show_list(app);
++            else
++                store_msg(app, "Installed", "Find it in Apps menu");
++        } else if(ph == WlanSdUpdateError) {
++            store_msg(app, "App Store", wlan_sd_update_get_error(app->sd_update));
++        } else {
++            store_progress(app, st == StoreFetching ? "Loading catalog" : "Installing");
++        }
++    }
++    return false;
++}
++
++void wlan_app_scene_app_store_on_exit(void* context) {
++    WlanApp* app = context;
++    submenu_reset(app->submenu);
++    popup_reset(app->popup);
++}
+diff --git a/applications/main/wlan_app/scenes/scene_config.h b/applications/main/wlan_app/scenes/scene_config.h
+index e7d7368..13d2e31 100644
+--- a/applications/main/wlan_app/scenes/scene_config.h
++++ b/applications/main/wlan_app/scenes/scene_config.h
+@@ -28,3 +28,4 @@ ADD_SCENE(wlan_app, live_creds, LiveCreds)
+ ADD_SCENE(wlan_app, update_sd, UpdateSd)
+ ADD_SCENE(wlan_app, smart_deauth, SmartDeauth)
+ ADD_SCENE(wlan_app, karma, Karma)
++ADD_SCENE(wlan_app, app_store, AppStore)
+diff --git a/applications/main/wlan_app/scenes/scene_main.c b/applications/main/wlan_app/scenes/scene_main.c
+index fd14bec..8ecc7d3 100644
+--- a/applications/main/wlan_app/scenes/scene_main.c
++++ b/applications/main/wlan_app/scenes/scene_main.c
+@@ -14,6 +14,7 @@ enum MainIndex {
+     MainIndexChannelSmartDeauth = 15,
+     MainIndexChannelKarma = 16,
+     MainIndexChannelSsidSpam = 17,
++    MainIndexAppStore = 18,
+ };
+ 
+ static void wlan_app_scene_main_submenu_cb(void* context, uint32_t index) {
+@@ -30,6 +31,7 @@ void wlan_app_scene_main_on_enter(void* context) {
+     app->channel_mode_active = false;
+     // Hub-Scene: ein evtl. abgebrochener Update-SD-Flow wird hier zurückgesetzt.
+     app->update_sd_flow = false;
++    app->store_flow = false;
+ 
+     if(!app->connected && !app->target_selected) {
+         submenu_add_item_centered(
+@@ -78,6 +80,9 @@ void wlan_app_scene_main_on_enter(void* context) {
+     submenu_add_item(
+         app->submenu, "Update SD", MainIndexUpdateSd,
+         wlan_app_scene_main_submenu_cb, app);
++    submenu_add_item(
++        app->submenu, "App Store", MainIndexAppStore,
++        wlan_app_scene_main_submenu_cb, app);
+ 
+     view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewSubmenu);
+ }
+@@ -156,6 +161,12 @@ bool wlan_app_scene_main_on_event(void* context, SceneManagerEvent event) {
+             scene_manager_next_scene(app->scene_manager, WlanAppSceneEvilPortalMenu);
+             consumed = true;
+             break;
++        case MainIndexAppStore:
++            app->store_flow = true;
++            scene_manager_next_scene(
++                app->scene_manager, app->connected ? WlanAppSceneAppStore : WlanAppSceneConnect);
++            consumed = true;
++            break;
+         case MainIndexUpdateSd:
+             app->update_sd_flow = true;
+             if(app->connected) {
+diff --git a/applications/main/wlan_app/scenes/scene_ssid_connect.c b/applications/main/wlan_app/scenes/scene_ssid_connect.c
+index f16634a..372c046 100644
+--- a/applications/main/wlan_app/scenes/scene_ssid_connect.c
++++ b/applications/main/wlan_app/scenes/scene_ssid_connect.c
+@@ -123,7 +123,9 @@ bool wlan_app_scene_ssid_connect_on_event(void* context, SceneManagerEvent event
+             app->connected = true;
+             app->target_selected = false;
+             app->lan_scan_complete = false;
+-            if(app->update_sd_flow) {
++            if(app->store_flow) {
++                scene_manager_next_scene(app->scene_manager, WlanAppSceneAppStore);
++            } else if(app->update_sd_flow) {
+                 // Update-SD-Flow braucht keinen ARP-Scan → direkt zur
+                 // Bestätigung/Download-Scene.
+                 scene_manager_next_scene(app->scene_manager, WlanAppSceneUpdateSd);
+diff --git a/applications/main/wlan_app/wlan_app.h b/applications/main/wlan_app/wlan_app.h
+index 349fbad..f49702a 100644
+--- a/applications/main/wlan_app/wlan_app.h
++++ b/applications/main/wlan_app/wlan_app.h
+@@ -237,6 +237,8 @@ struct WlanApp {
+     // dass scene_ssid_connect nach erfolgreichem Connect zur Update-SD-Scene
+     // statt zum ARP-Scan springt. Wird in scene_update_sd konsumiert.
+     bool update_sd_flow;
++    // App Store: like update_sd_flow, routes to the App Store after connect.
++    bool store_flow;
+     WlanSdUpdate* sd_update;
+     View* view_sd_update;
+ 
+diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
+index 8a5d7bd..b99ad1b 100644
+--- a/applications/main/wlan_app/wlan_sd_update.c
++++ b/applications/main/wlan_app/wlan_sd_update.c
+@@ -25,6 +25,11 @@
+ // raw.githubusercontent.com has no rate limit, no User-Agent requirement, and
+ // no JSON dependency.
+ #define SD_UPDATE_MANIFEST_URL SD_UPDATE_RAW_BASE "/Manifest"
++// App Store sources, merged in this order. Second one = your own games repo
++// (built by its GitHub Actions workflow). Repo: github.com/v1nx0/m5stick-games
++#define APP_STORE_OWN_BASE "https://raw.githubusercontent.com/v1nx0/m5stick-games/main"
++static const char* const APP_STORE_BASES[] = {SD_UPDATE_RAW_BASE, APP_STORE_OWN_BASE};
++#define APP_STORE_SOURCES (sizeof(APP_STORE_BASES) / sizeof(APP_STORE_BASES[0]))
+ 
+ #define SD_UPDATE_LOCAL_VERSION "/ext/version.txt"
+ #define SD_UPDATE_DEST_ROOT "/ext"
+@@ -47,6 +52,11 @@ struct WlanSdUpdate {
+     volatile uint32_t total_files;
+     char current_file[64];
+     char err[64];
++    // App Store: 0 = full sync, 1 = fetch catalog only, 2 = install one file
++    uint8_t mode;
++    char* catalog; // raw Manifest (App Store), owned
++    char install_rel[160];
++    uint8_t install_src;
+ };
+ 
+ static void sd_update_set_file(WlanSdUpdate* u, const char* name) {
+@@ -449,10 +459,14 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+ // Worker Task
+ // ---------------------------------------------------------------------------
+ 
++// One permanent worker runs every job. Re-creating a self-deleting static task
++// on the same TCB/stack raced the idle task's cleanup of the previous one.
++static TaskHandle_t s_worker = NULL;
++static WlanSdUpdate* volatile s_job = NULL;
++
++// Last thing a job does: after this the worker goes back to sleep.
+ static void sd_update_finish(WlanSdUpdate* u) {
+     u->running = false;
+-    u->task = NULL;
+-    vTaskDelete(NULL);
+ }
+ 
+ static void sd_update_task(void* arg) {
+@@ -461,6 +475,69 @@ static void sd_update_task(void* arg) {
+     u->phase = WlanSdUpdateChecking;
+     u->percent = 0;
+ 
++    if(u->mode == 1) {
++        char* all = NULL;
++        size_t all_len = 0;
++        for(size_t i = 0; i < APP_STORE_SOURCES && !u->cancel; i++) {
++            char url[200];
++            snprintf(url, sizeof(url), "%s/Manifest", APP_STORE_BASES[i]);
++            size_t clen = 0;
++            char* c = sd_update_http_get_alloc(url, &clen);
++            if(!c) continue; // one source down must not hide the other
++            char* grown = realloc(all, all_len + clen + 16);
++            if(grown) {
++                all = grown;
++                all_len += (size_t)sprintf(all + all_len, "S:%u\n", (unsigned)i);
++                memcpy(all + all_len, c, clen);
++                all_len += clen;
++                all[all_len++] = '\n';
++                all[all_len] = '\0';
++            }
++            free(c);
++        }
++        if(all) {
++            free(u->catalog);
++            u->catalog = all;
++            u->phase = WlanSdUpdateDone;
++        } else if(!u->cancel) {
++            sd_update_fail(u, "Manifest fetch failed");
++        } else {
++            u->phase = WlanSdUpdateIdle;
++        }
++        sd_update_finish(u);
++        return;
++    }
++    if(u->mode == 2) {
++        u->phase = WlanSdUpdateDownloading;
++        char dest[256], url[400];
++        bool ok = false;
++        if(sd_update_safe_dest(u->install_rel, dest, sizeof(dest))) {
++            snprintf(url, sizeof(url), "%s/%s", APP_STORE_BASES[u->install_src], u->install_rel);
++            esp_http_client_config_t cfg;
++            sd_update_http_cfg(&cfg, url);
++            esp_http_client_handle_t client = esp_http_client_init(&cfg);
++            Storage* storage = furi_record_open(RECORD_STORAGE);
++            if(client) {
++                sd_update_mkdirs(storage, dest);
++                ok = sd_update_download_file(u, client, storage, url, dest);
++                esp_http_client_cleanup(client);
++            }
++            // never leave a half-written FAP the loader would try to run
++            if(!ok) storage_common_remove(storage, dest);
++            furi_record_close(RECORD_STORAGE);
++        }
++        if(ok) {
++            u->percent = 100;
++            u->phase = WlanSdUpdateDone;
++        } else if(!u->cancel) {
++            sd_update_fail(u, "Download failed");
++        } else {
++            u->phase = WlanSdUpdateIdle;
++        }
++        sd_update_finish(u);
++        return;
++    }
++
+     if(!u->cancel && sd_update_is_up_to_date()) {
+         u->phase = WlanSdUpdateUpToDate;
+         sd_update_finish(u);
+@@ -487,6 +564,14 @@ static void sd_update_task(void* arg) {
+     sd_update_finish(u);
+ }
+ 
++static void sd_update_worker(void* arg) {
++    UNUSED(arg);
++    for(;;) {
++        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
++        if(s_job) sd_update_task(s_job);
++    }
++}
++
+ // ---------------------------------------------------------------------------
+ // Public API
+ // ---------------------------------------------------------------------------
+@@ -502,6 +587,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+     u->done_files = 0;
+     u->total_files = 0;
+     u->err[0] = '\0';
++    u->mode = 0;
++    u->catalog = NULL;
++    u->install_rel[0] = '\0';
+     sd_update_set_file(u, "version.txt");
+     return u;
+ }
+@@ -509,10 +597,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+ void wlan_sd_update_free(WlanSdUpdate* u) {
+     if(!u) return;
+     wlan_sd_update_cancel(u);
++    free(u->catalog);
+     free(u);
+ }
+ 
+ void wlan_sd_update_start(WlanSdUpdate* u) {
++    if(u->running) return;
++    u->mode = 0;
++    wlan_sd_update_start_mode(u);
++}
++
++void wlan_sd_update_fetch_catalog(WlanSdUpdate* u) {
++    if(u->running) return;
++    u->mode = 1;
++    wlan_sd_update_start_mode(u);
++}
++
++void wlan_sd_update_install(WlanSdUpdate* u, const char* rel, uint8_t src) {
++    if(u->running || src >= APP_STORE_SOURCES) return;
++    u->mode = 2;
++    u->install_src = src;
++    strncpy(u->install_rel, rel, sizeof(u->install_rel) - 1);
++    u->install_rel[sizeof(u->install_rel) - 1] = '\0';
++    wlan_sd_update_start_mode(u);
++}
++
++// Manifest lines: F:<md5>:<size>:<path>. Returns the idx-th "apps/...fap" entry.
++bool wlan_sd_update_catalog_get(
++    const WlanSdUpdate* u, uint32_t idx, char* rel, size_t rel_sz, uint32_t* size, uint8_t* src) {
++    uint32_t n = 0;
++    uint8_t cur_src = 0;
++    for(const char* p = u->catalog; p && *p;) {
++        const char* nl = strchr(p, '\n');
++        size_t ln = nl ? (size_t)(nl - p) : strlen(p);
++        const char* end = p + ln;
++        if(ln && end[-1] == '\r') end--;
++        if(p[0] == 'S' && p[1] == ':') cur_src = (uint8_t)atoi(p + 2);
++        const char* c1 =
++            (end - p > 2 && p[0] == 'F' && p[1] == ':') ? memchr(p + 2, ':', end - p - 2) : NULL;
++        const char* c2 = c1 ? memchr(c1 + 1, ':', end - c1 - 1) : NULL;
++        if(c2) {
++            const char* path = c2 + 1;
++            size_t pl = (size_t)(end - path);
++            if(pl > 9 && pl < rel_sz && strncmp(path, "apps/", 5) == 0 &&
++               memcmp(end - 4, ".fap", 4) == 0 && n++ == idx) {
++                memcpy(rel, path, pl);
++                rel[pl] = '\0';
++                if(size) *size = (uint32_t)strtoul(c1 + 1, NULL, 10);
++                if(src) *src = cur_src;
++                return true;
++            }
++        }
++        p = nl ? nl + 1 : end;
++    }
++    return false;
++}
++
++void wlan_sd_update_start_mode(WlanSdUpdate* u) {
+     if(u->running) return;
+     u->cancel = false;
+     u->percent = 0;
+@@ -524,17 +665,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
+     u->phase = WlanSdUpdateChecking;
+     u->running = true;
+     static StaticTask_t sd_upd_tcb;
++    // allocated once and reused: a static task cannot free its own stack, and a
++    // fresh malloc per start leaked 8 KB on every update / App Store install
++    static StackType_t* sd_stack = NULL;
+     size_t sd_stack_size = 8192;
+-    StackType_t* sd_stack = heap_caps_malloc(sd_stack_size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
++    if(!sd_stack) sd_stack = heap_caps_malloc(sd_stack_size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+     if(!sd_stack) sd_stack = heap_caps_malloc(sd_stack_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+     if(sd_stack) {
+-        u->task = xTaskCreateStatic(sd_update_task, "WlanSdUpd", sd_stack_size, u, 4, sd_stack, &sd_upd_tcb);
++        if(!s_worker)
++            s_worker = xTaskCreateStatic(
++                sd_update_worker, "WlanSdUpd", sd_stack_size, NULL, 4, sd_stack, &sd_upd_tcb);
+     }
+-    if(!u->task) {
++    if(!s_worker) {
+         u->running = false;
+-        u->task = NULL;
+         sd_update_fail(u, "Task spawn failed");
++        return;
+     }
++    u->task = s_worker;
++    s_job = u;
++    xTaskNotifyGive(s_worker);
+ }
+ 
+ void wlan_sd_update_cancel(WlanSdUpdate* u) {
+diff --git a/applications/main/wlan_app/wlan_sd_update.h b/applications/main/wlan_app/wlan_sd_update.h
+index d94c9e2..489100b 100644
+--- a/applications/main/wlan_app/wlan_sd_update.h
++++ b/applications/main/wlan_app/wlan_sd_update.h
+@@ -2,6 +2,7 @@
+ 
+ #include <stdbool.h>
+ #include <stdint.h>
++#include <stddef.h>
+ 
+ /** Download von sdcard.zip + Entpacken auf /ext. Läuft in einem dedizierten
+  *  xTaskCreate-Task (esp_http_client nutzt lwIP-Sockets, die nicht aus
+@@ -43,3 +44,12 @@ uint32_t wlan_sd_update_get_speed_kbps(const WlanSdUpdate* u);
+ /** Bearbeitete bzw. Gesamtanzahl Manifest-Einträge (für "<n>/<max>"). */
+ uint32_t wlan_sd_update_get_done(const WlanSdUpdate* u);
+ uint32_t wlan_sd_update_get_total(const WlanSdUpdate* u);
++
++/** App Store: fetch the Manifest (Done when ready). */
++void wlan_sd_update_fetch_catalog(WlanSdUpdate* u);
++/** App Store: download one file (e.g. "apps/Games/x.fap") to /ext. */
++void wlan_sd_update_install(WlanSdUpdate* u, const char* rel, uint8_t src);
++/** App Store: idx-th "apps/...fap" entry of the fetched catalog. */
++bool wlan_sd_update_catalog_get(
++    const WlanSdUpdate* u, uint32_t idx, char* rel, size_t rel_sz, uint32_t* size, uint8_t* src);
++void wlan_sd_update_start_mode(WlanSdUpdate* u);
+diff --git a/applications_user/games_menu/application.fam b/applications_user/games_menu/application.fam
+new file mode 100644
+index 0000000..34701d0
+--- /dev/null
++++ b/applications_user/games_menu/application.fam
+@@ -0,0 +1,12 @@
++App(
++    appid="games_menu",
++    name="Games",
++    apptype=FlipperAppType.MENUEXTERNAL,
++    entry_point="games_menu_app",
++    icon="A_Plugins_14",
++    requires=["gui"],
++    stack_size=2 * 1024,
++    order=85,
++    fap_icon="icon_10px.png",
++    fap_category="Games",
++)
+diff --git a/applications_user/games_menu/games_menu.c b/applications_user/games_menu/games_menu.c
+new file mode 100644
+index 0000000..aaaa802
+--- /dev/null
++++ b/applications_user/games_menu/games_menu.c
+@@ -0,0 +1,72 @@
++// Games: lists the built-in game pack (no SD card on M5StickC Plus2, so the
++// games are compiled into the firmware) and launches the picked one.
++#include <furi.h>
++#include <gui/gui.h>
++#include <gui/view_dispatcher.h>
++#include <gui/modules/submenu.h>
++#include <loader/loader.h>
++
++static const struct {
++    const char* name;
++    const char* appid;
++} GAMES[] = {
++    {"Snake", "snake"},
++    {"Sky Hopper", "sky_hopper"},
++    {"Brick Breaker", "brick_breaker"},
++    {"Mines", "mines"},
++    {"Tic-Tac-Toe", "tic_tac_toe"},
++    {"Four in a Row", "four_in_a_row"},
++    {"Merge Tiles", "merge_tiles"},
++    {"Pattern Memory", "pattern_memory"},
++    {"Reaction Test", "reaction_test"},
++    {"Space Dodge", "space_dodge"},
++    {"Star Shooter", "star_shooter"},
++    {"Hi-Lo", "hi_lo"},
++};
++
++typedef struct {
++    ViewDispatcher* vd;
++    int picked;
++} GamesMenu;
++
++static void pick_cb(void* ctx, uint32_t index) {
++    GamesMenu* m = ctx;
++    m->picked = (int)index;
++    view_dispatcher_stop(m->vd);
++}
++
++static bool back_cb(void* ctx) {
++    GamesMenu* m = ctx;
++    view_dispatcher_stop(m->vd);
++    return true;
++}
++
++int32_t games_menu_app(void* p) {
++    UNUSED(p);
++    GamesMenu m = {.picked = -1};
++    Gui* gui = furi_record_open(RECORD_GUI);
++    m.vd = view_dispatcher_alloc();
++    Submenu* sm = submenu_alloc();
++    submenu_set_header(sm, "Games");
++    for(size_t i = 0; i < COUNT_OF(GAMES); i++)
++        submenu_add_item(sm, GAMES[i].name, i, pick_cb, &m);
++    view_dispatcher_set_event_callback_context(m.vd, &m);
++    view_dispatcher_set_navigation_event_callback(m.vd, back_cb);
++    view_dispatcher_add_view(m.vd, 0, submenu_get_view(sm));
++    view_dispatcher_attach_to_gui(m.vd, gui, ViewDispatcherTypeFullscreen);
++    view_dispatcher_switch_to_view(m.vd, 0);
++    view_dispatcher_run(m.vd);
++
++    view_dispatcher_remove_view(m.vd, 0);
++    submenu_free(sm);
++    view_dispatcher_free(m.vd);
++    furi_record_close(RECORD_GUI);
++
++    if(m.picked >= 0) {
++        // deferred: the loader starts the game once this app has exited
++        Loader* loader = furi_record_open(RECORD_LOADER);
++        loader_start_detached_with_gui_error(loader, GAMES[m.picked].appid, NULL);
++        furi_record_close(RECORD_LOADER);
++    }
++    return 0;
++}
+diff --git a/applications_user/games_menu/icon_10px.png b/applications_user/games_menu/icon_10px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..1ede9a5480c7f74012c85f8f5a45e048561a8898
+GIT binary patch
+literal 87
+zcmeAS@N?(olHy`uVBq!ia0vp^AT}2xkYHHq`AGms$$7dshE&W+PGDekJ65&KormYQ
+jq{KhN1_>Va83!IQxNT!Od7;a_0;I#!)z4*}Q$iB}BsCVA
+
+literal 0
+HcmV?d00001
+
+diff --git a/fam_config.py b/fam_config.py
+index 36c143f..6e4de07 100644
+--- a/fam_config.py
++++ b/fam_config.py
+@@ -78,6 +78,20 @@ APPS = [
+     "js_infrared",
+     "js_blebeacon",
+     "qflipper_app",
++    # game pack (built in: no SD card for FAPs on M5StickC Plus2)
++    "games_menu",
++    "snake",
++    "sky_hopper",
++    "brick_breaker",
++    "mines",
++    "tic_tac_toe",
++    "four_in_a_row",
++    "merge_tiles",
++    "pattern_memory",
++    "reaction_test",
++    "space_dodge",
++    "star_shooter",
++    "hi_lo",
+     # js_serial, js_gpio, js_i2c, js_spi excluded - need HAL porting
+ ]
+ 
+diff --git a/lib/infrared/signal/infrared_brute_force.c b/lib/infrared/signal/infrared_brute_force.c
+index 519bbbb..ace2ec3 100644
+--- a/lib/infrared/signal/infrared_brute_force.c
++++ b/lib/infrared/signal/infrared_brute_force.c
+@@ -97,6 +97,7 @@ InfraredErrorCode infrared_brute_force_calculate_messages(InfraredBruteForce* br
+     FlipperFormat* ff = flipper_format_buffered_file_alloc(storage);
+     FuriString* signal_name = furi_string_alloc();
+     InfraredSignal* signal = infrared_signal_alloc();
++    FuriString* on_name = furi_string_alloc_set("On");
+ 
+     do {
+         if(!flipper_format_buffered_file_open_existing(ff, brute_force->db_filename)) {
+@@ -113,14 +114,21 @@ InfraredErrorCode infrared_brute_force_calculate_messages(InfraredBruteForce* br
+ 
+             InfraredBruteForceRecord* record =
+                 InfraredBruteForceRecordDict_get(brute_force->records, signal_name);
+-            furi_assert(record);
+-            SignalPositionArray_push_back(record->signals, signal_start);
++            // skip names the current remote did not register (was a NULL deref)
++            if(record) SignalPositionArray_push_back(record->signals, signal_start);
++            // AC "On": ac.ir has no power-on codes, but a Cool_lo full-state frame
++            // turns the unit on, so the On button replays those.
++            if(furi_string_equal_str(signal_name, "Cool_lo")) {
++                record = InfraredBruteForceRecordDict_get(brute_force->records, on_name);
++                if(record) SignalPositionArray_push_back(record->signals, signal_start);
++            }
+         }
+         if(!signal_valid) break;
+     } while(false);
+ 
+     infrared_signal_free(signal);
+     furi_string_free(signal_name);
++    furi_string_free(on_name);
+ 
+     flipper_format_free(ff);
+     furi_record_close(RECORD_STORAGE);

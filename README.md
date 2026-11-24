@@ -1,5 +1,7 @@
 # m5stick-games
 
+**Web flasher:** https://v1nx0.github.io/m5stick-games/ (Chrome/Edge, USB)
+
 Games for the Flipper Zero ESP32 port on **M5StickC Plus2**, served to the
 on-device **WiFi > App Store** (which also lists `trollmaster419/m5resources`).
 
@@ -10,3 +12,6 @@ Add a game: put its folder in `games/`, push. The workflow builds it against the
 Plus2 firmware and updates `Manifest`; the App Store sees it on next open.
 
 Controls on the Plus2: A = OK (hold = long OK), B tap = Down, B hold = Up, Power = Back.
+
+`firmware/plus2.patch` -- App Store, Games menu and AC On changes, applied by CI to
+trollmaster419/Flipper-Zero-ESP32-Port; the built firmware lands in `docs/firmware/` for the flasher.
