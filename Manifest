@@ -1,5 +1,5 @@
 V:0
-T:1795616300
+T:1795619391
 D:apps
 D:apps/Games
 F:c3ae417ccbac22aa1590b70f9c6efc24:6356:apps/Games/brick_breaker.fap
@@ -93,7 +93,7 @@ F:55eff0c279c523cc6888f052ba6109f8:326145:infrared/assets/ac_plus.ir
 F:08dea79f617bf861608a4e55e918fbf4:173198:infrared/assets/audio_plus.ir
 F:bd926d0a3b503672a8d49b8cf1a804b6:306360:infrared/assets/fans_plus.ir
 F:e3442b680a6e2bef08a157c71f371d47:207772:infrared/assets/leds_plus.ir
-F:966c6ed93404907273eb56d631282461:65916:infrared/assets/projectors_plus.ir
+F:dd28f71416067e547d1280d238da82b4:69547:infrared/assets/projectors_plus.ir
 F:3a6dc1a2ad83fc70bd5c8793da284e1e:175772:infrared/assets/tv_plus.ir
 D:badusb
 F:b3d9b53ef8ca9bcae37377acf1f38272:114:badusb/01_Hello_World.txt
