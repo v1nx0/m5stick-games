@@ -1,0 +1,3 @@
+REM macOS: opens the screenshot toolbar.
+DELAY 300
+GUI SHIFT 5

@@ -1,0 +1,3 @@
+REM Most browsers: toggles fullscreen.
+DELAY 300
+F11

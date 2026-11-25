@@ -8,3 +8,7 @@ This board has no real USB port, so Bad USB works over BLUETOOTH:
 
 DuckyScript commands: STRING, ENTER, DELAY, GUI, CTRL, ALT, SHIFT, etc.
 Use only on devices you own.
+
+Payloads 01-30 are harmless demos and productivity shortcuts for Windows,
+macOS, Linux, browsers, and media control. USB cable HID is not possible on
+M5StickC Plus2 hardware; use the BLE keyboard connection.

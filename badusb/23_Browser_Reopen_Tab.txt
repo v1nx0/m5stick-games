@@ -1,0 +1,3 @@
+REM Most browsers: reopens the most recently closed tab.
+DELAY 300
+CTRL SHIFT t

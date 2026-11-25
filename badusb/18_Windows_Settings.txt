@@ -1,0 +1,3 @@
+REM Windows: opens Settings.
+DELAY 500
+GUI i

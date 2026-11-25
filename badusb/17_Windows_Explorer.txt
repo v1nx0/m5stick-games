@@ -1,0 +1,3 @@
+REM Windows: opens File Explorer.
+DELAY 500
+GUI e

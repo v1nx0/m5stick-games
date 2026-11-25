@@ -1,0 +1,3 @@
+REM Most browsers: opens History.
+DELAY 300
+CTRL h

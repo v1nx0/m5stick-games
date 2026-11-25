@@ -1,3 +1,45 @@
+diff --git a/applications/main/bad_usb/helpers/bad_usb_hid.c b/applications/main/bad_usb/helpers/bad_usb_hid.c
+index dbec619..9c547bd 100644
+--- a/applications/main/bad_usb/helpers/bad_usb_hid.c
++++ b/applications/main/bad_usb/helpers/bad_usb_hid.c
+@@ -213,6 +213,11 @@ void* hid_ble_init(BadUsbHidConfig* hid_cfg) {
+         hid_cfg->ble.bonding,
+         hid_cfg->ble.pairing);
+     ble_hid->bt = furi_record_open(RECORD_BT);
++    if(!bt_is_enabled(ble_hid->bt)) {
++        FURI_LOG_I(TAG, "Starting Bluetooth stack for BLE HID");
++        bt_start_stack(ble_hid->bt);
++        furi_delay_ms(500);
++    }
+     bt_disconnect(ble_hid->bt);
+ 
+     furi_delay_ms(200);
+@@ -226,9 +231,7 @@ void* hid_ble_init(BadUsbHidConfig* hid_cfg) {
+     }
+     FURI_LOG_I(TAG, "hid_ble_init profile started");
+ 
+-    if(bt_is_enabled(ble_hid->bt)) {
+-        furi_hal_bt_start_advertising();
+-    }
++    furi_hal_bt_start_advertising();
+ 
+     bt_set_status_changed_callback(ble_hid->bt, hid_ble_connection_status_callback, ble_hid);
+     return ble_hid;
+diff --git a/applications/main/bad_usb/views/bad_usb_view.c b/applications/main/bad_usb/views/bad_usb_view.c
+index 27e569c..39dfa5d 100644
+--- a/applications/main/bad_usb/views/bad_usb_view.c
++++ b/applications/main/bad_usb/views/bad_usb_view.c
+@@ -45,6 +45,10 @@ static void bad_usb_draw_callback(Canvas* canvas, void* _model) {
+ 
+     if(model->interface == BadUsbHidInterfaceBle) {
+         canvas_draw_icon(canvas, 22, 24, &I_Bad_BLE_48x22);
++        if(!model->usb_supported) {
++            canvas_set_font(canvas, FontSecondary);
++            canvas_draw_str_aligned(canvas, 127, 54, AlignRight, AlignBottom, "BLE only");
++        }
+     } else {
+         canvas_draw_icon(canvas, 22, 24, &I_UsbTree_48x22);
+     }
 diff --git a/applications/main/ble_spam/scenes/scene_running.c b/applications/main/ble_spam/scenes/scene_running.c
 index 8be76e8..4aa1d19 100644
 --- a/applications/main/ble_spam/scenes/scene_running.c
@@ -726,27 +768,15 @@ index 0000000..3f695bd
 +    ac.picking = false;
 +}
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_projector.c b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
-index ac3f0c3..e70df23 100644
+index ac3f0c3..ab2d9d5 100644
 --- a/applications/main/infrared/scenes/infrared_scene_universal_projector.c
 +++ b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
-@@ -2,95 +2,85 @@
+@@ -2,95 +2,62 @@
  
  #include "common/infrared_scene_universal_common.h"
  
-+static void infrared_scene_universal_projector_item_callback(
-+    void* context,
-+    uint32_t index,
-+    InputType type) {
-+    // Off/Mute and Freeze/Unfreeze intentionally share the same IR code.
-+    if(index == 1) index = 2;
-+    if(index == 3) index = 4;
-+    infrared_scene_universal_common_item_callback(context, index, type);
-+}
-+
-+// Projector scan panel. Each button brute-forces that named record across every
-+// brand in projectors(_plus).ir. On=Power; Off=Mute (on many projectors Mute is the
-+// real power-off); Unfreeze=Freeze again (Freeze is a toggle on nearly all models).
-+// No Freeze/Unfreeze icon ships, so those reuse pause/play with a text label.
++// Two columns fit the Plus2's rotated 64-pixel-wide Flipper canvas. Power and
++// Freeze are toggles; duplicate On/Off and Freeze/Unfreeze buttons only hid labels.
  void infrared_scene_universal_projector_on_enter(void* context) {
      InfraredApp* infrared = context;
      ButtonPanel* button_panel = infrared->button_panel;
@@ -755,10 +785,10 @@ index ac3f0c3..e70df23 100644
      infrared_brute_force_set_db_filename(brute_force, EXT_PATH("infrared/assets/projectors.ir"));
 -    //TODO Improve Projectors universal remote
 -    button_panel_reserve(button_panel, 2, 3);
-+    button_panel_reserve(button_panel, 3, 3);
++    button_panel_reserve(button_panel, 2, 4);
      uint32_t i = 0;
 +
-+    // Row 0: On / Off / Mute
++    // Row 0: Power / Mute
      button_panel_add_item(
 -        button_panel,
 -        i,
@@ -771,9 +801,9 @@ index ac3f0c3..e70df23 100644
 -        infrared_scene_universal_common_item_callback,
 -        context);
 -    button_panel_add_icon(button_panel, 4, 46, &I_power_text_24x5);
-+        button_panel, i, 0, 0, 4, 20, &I_power_19x20, &I_power_hover_19x20,
-+        infrared_scene_universal_projector_item_callback, context);
-+    button_panel_add_label(button_panel, 6, 44, FontSecondary, "On");
++        button_panel, i, 0, 0, 6, 20, &I_power_19x20, &I_power_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 2, 43, FontSecondary, "Power");
      infrared_brute_force_add_record(brute_force, i++, "Power");
 +
      button_panel_add_item(
@@ -788,18 +818,12 @@ index ac3f0c3..e70df23 100644
 -        infrared_scene_universal_common_item_callback,
 -        context);
 -    button_panel_add_icon(button_panel, 39, 46, &I_mute_text_19x5);
-+        button_panel, i, 1, 0, 46, 20, &I_off_19x20, &I_off_hover_19x20,
-+        infrared_scene_universal_projector_item_callback, context);
-+    button_panel_add_label(button_panel, 48, 44, FontSecondary, "Off");
-+    i++; // Off is remapped to the Mute record below.
-+
-+    button_panel_add_item(
-+        button_panel, i, 2, 0, 88, 20, &I_mute_19x20, &I_mute_hover_19x20,
-+        infrared_scene_universal_projector_item_callback, context);
-+    button_panel_add_icon(button_panel, 88, 42, &I_mute_text_19x5);
++        button_panel, i, 1, 0, 39, 20, &I_mute_19x20, &I_mute_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 38, 43, FontSecondary, "Mute");
      infrared_brute_force_add_record(brute_force, i++, "Mute");
 +
-+    // Row 1: Freeze / Unfreeze / Vol+
++    // Row 1: Freeze / Vol+
      button_panel_add_item(
 -        button_panel,
 -        i,
@@ -811,23 +835,17 @@ index ac3f0c3..e70df23 100644
 -        &I_volup_hover_24x21,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 0, 1, 4, 56, &I_pause_19x20, &I_pause_hover_19x20,
-+        infrared_scene_universal_projector_item_callback, context);
-+    button_panel_add_label(button_panel, 2, 80, FontSecondary, "Frz");
-+    i++; // Freeze is remapped to the shared Freeze record below.
++        button_panel, i, 0, 1, 6, 49, &I_pause_19x20, &I_pause_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 1, 72, FontSecondary, "Freeze");
++    infrared_brute_force_add_record(brute_force, i++, "Freeze");
 +
 +    button_panel_add_item(
-+        button_panel, i, 1, 1, 46, 56, &I_play_19x20, &I_play_hover_19x20,
-+        infrared_scene_universal_projector_item_callback, context);
-+    button_panel_add_label(button_panel, 44, 80, FontSecondary, "Unfrz");
-+    infrared_brute_force_add_record(brute_force, i++, "Freeze"); // toggle: send Freeze again
-+
-+    button_panel_add_item(
-+        button_panel, i, 2, 1, 86, 55, &I_volup_24x21, &I_volup_hover_24x21,
-+        infrared_scene_universal_projector_item_callback, context);
++        button_panel, i, 1, 1, 37, 49, &I_volup_24x21, &I_volup_hover_24x21,
++        infrared_scene_universal_common_item_callback, context);
      infrared_brute_force_add_record(brute_force, i++, "Vol_up");
  
-+    // Row 2: Vol- / Play / Pause
++    // Row 2: Vol- / Play
      button_panel_add_item(
 -        button_panel,
 -        i,
@@ -839,8 +857,8 @@ index ac3f0c3..e70df23 100644
 -        &I_voldown_hover_24x21,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 0, 2, 5, 92, &I_voldown_24x21, &I_voldown_hover_24x21,
-+        infrared_scene_universal_projector_item_callback, context);
++        button_panel, i, 0, 2, 4, 78, &I_voldown_24x21, &I_voldown_hover_24x21,
++        infrared_scene_universal_common_item_callback, context);
      infrared_brute_force_add_record(brute_force, i++, "Vol_dn");
 +
      button_panel_add_item(
@@ -854,12 +872,13 @@ index ac3f0c3..e70df23 100644
 -        &I_play_hover_19x20,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 1, 2, 46, 92, &I_play_19x20, &I_play_hover_19x20,
-+        infrared_scene_universal_projector_item_callback, context);
-+    button_panel_add_icon(button_panel, 46, 114, &I_play_text_19x5);
++        button_panel, i, 1, 2, 39, 78, &I_play_19x20, &I_play_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 38, 101, FontSecondary, "Play");
      infrared_brute_force_add_record(brute_force, i++, "Play");
 -    button_panel_add_icon(button_panel, 6, 80, &I_play_text_19x5);
 +
++    // Row 3: Pause
      button_panel_add_item(
 -        button_panel,
 -        i,
@@ -871,15 +890,15 @@ index ac3f0c3..e70df23 100644
 -        &I_pause_hover_19x20,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 2, 2, 88, 92, &I_pause_19x20, &I_pause_hover_19x20,
-+        infrared_scene_universal_projector_item_callback, context);
-+    button_panel_add_icon(button_panel, 86, 114, &I_pause_text_23x5);
++        button_panel, i, 0, 3, 6, 102, &I_pause_19x20, &I_pause_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 2, 125, FontSecondary, "Pause");
      infrared_brute_force_add_record(brute_force, i++, "Pause");
 -    button_panel_add_icon(button_panel, 4, 109, &I_pause_text_23x5);
  
 -    button_panel_add_label(button_panel, 10, 11, FontPrimary, "Projector");
 -    button_panel_add_icon(button_panel, 34, 68, &I_vol_ac_text_30x30);
-+    button_panel_add_label(button_panel, 2, 10, FontPrimary, "Projector");
++    button_panel_add_label(button_panel, 1, 10, FontPrimary, "Projector");
  
      infrared_scene_universal_common_on_enter(context);
  }
@@ -1269,6 +1288,34 @@ index 349fbad..06ba0d7 100644
      WlanSdUpdate* sd_update;
      View* view_sd_update;
  
+diff --git a/applications/main/wlan_app/wlan_evil_portal.c b/applications/main/wlan_app/wlan_evil_portal.c
+index a8c1f00..29a5a85 100644
+--- a/applications/main/wlan_app/wlan_evil_portal.c
++++ b/applications/main/wlan_app/wlan_evil_portal.c
+@@ -550,11 +550,9 @@ static bool start_http(void) {
+     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+     config.server_port = 80;
+     config.max_uri_handlers = 24;
+-    // Bumped from 7 → 13: Windows clients open many parallel connections (Steam,
+-    // Discord, Chrome, WPAD, NCSI, etc) the moment they detect a new network,
+-    // and 7 sockets exhausts within milliseconds, dropping browser captive-portal
+-    // probes with ERR_CONNECTION_RESET. 13 is the practical max per ESP-IDF.
+-    config.max_open_sockets = 13;
++    // CONFIG_LWIP_MAX_SOCKETS is 10 and httpd reserves three internal sockets.
++    // Bruce's portal keeps this simple: wildcard DNS plus a small port-80 server.
++    config.max_open_sockets = 7;
+     config.uri_match_fn = httpd_uri_match_wildcard;
+     config.lru_purge_enable = true;
+     // Aggressive recv timeout so a stuck client doesn't squat a socket forever.
+@@ -1194,7 +1192,7 @@ static void evil_portal_start_worker(void* arg) {
+     ESP_LOGI(TAG, "[worker] starting DNS task");
+     s_dns_run = true;
+     // Task-Stack ins PSRAM legen (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y):
+-    // der interne Heap ist nach esp_wifi_init + httpd (13 Sockets) zu knapp fuer
++    // der interne Heap ist nach esp_wifi_init + httpd zu knapp fuer
+     // 6 KB Stack. Erfordert vTaskDeleteWithCaps() beim Self-Delete (siehe dns_task).
+     if(xTaskCreateWithCaps(
+            dns_task, "EpDns", DNS_TASK_STACK, NULL, 4, &s_dns_task, MALLOC_CAP_SPIRAM) !=
 diff --git a/applications/main/wlan_app/wlan_hal.c b/applications/main/wlan_app/wlan_hal.c
 index 1f78604..5b61ff6 100644
 --- a/applications/main/wlan_app/wlan_hal.c

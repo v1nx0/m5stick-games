@@ -1,0 +1,3 @@
+REM Most browsers: opens Downloads.
+DELAY 300
+CTRL j

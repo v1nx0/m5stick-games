@@ -1,0 +1,5 @@
+REM Windows: opens Calculator.
+DELAY 500
+GUI r
+DELAY 300
+STRINGLN calc

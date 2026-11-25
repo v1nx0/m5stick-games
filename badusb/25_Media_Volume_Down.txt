@@ -1,0 +1,3 @@
+REM Lowers volume by five steps.
+REPEAT 5
+MEDIA VOLUME_DOWN

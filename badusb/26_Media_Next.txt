@@ -1,0 +1,3 @@
+REM Skips to the next media track.
+DELAY 300
+MEDIA NEXT_TRACK

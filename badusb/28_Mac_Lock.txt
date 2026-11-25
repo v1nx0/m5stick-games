@@ -1,0 +1,3 @@
+REM macOS: locks the screen.
+DELAY 300
+GUI CTRL q

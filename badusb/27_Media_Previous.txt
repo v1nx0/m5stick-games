@@ -1,0 +1,3 @@
+REM Returns to the previous media track.
+DELAY 300
+MEDIA PREV_TRACK
