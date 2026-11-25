@@ -1,3 +1,16 @@
+diff --git a/applications/main/ble_spam/scenes/scene_running.c b/applications/main/ble_spam/scenes/scene_running.c
+index 8be76e8..4aa1d19 100644
+--- a/applications/main/ble_spam/scenes/scene_running.c
++++ b/applications/main/ble_spam/scenes/scene_running.c
+@@ -157,7 +157,7 @@ void ble_spam_scene_running_on_enter(void* context) {
+ 
+     app->running = false;
+     app->packet_count = 0;
+-    app->delay_ms = 100;
++    app->delay_ms = 40; // ~25 pkt/s (was 10): faster popups
+     app->current_index = 0;
+     app->current_device[0] = '\0';
+ 
 diff --git a/applications/main/infrared/application.fam b/applications/main/infrared/application.fam
 index 8ebe9bd..f7ff60a 100644
 --- a/applications/main/infrared/application.fam
@@ -3210,7 +3223,7 @@ index 519bbbb..63a2cc1 100644
      flipper_format_free(ff);
      furi_record_close(RECORD_STORAGE);
 diff --git a/main/CMakeLists.txt b/main/CMakeLists.txt
-index fffb2cb..a9b9abf 100644
+index fffb2cb..1aca9a5 100644
 --- a/main/CMakeLists.txt
 +++ b/main/CMakeLists.txt
 @@ -32,7 +32,7 @@ endif()
@@ -3218,7 +3231,7 @@ index fffb2cb..a9b9abf 100644
      SRCS "app_main.c" "${ESP32_FAM_REGISTRY_C}" "../applications/main/wlan_app/wlan_karma.c"
      INCLUDE_DIRS "." "../applications/main/wlan_app"
 -    REQUIRES furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
-+    REQUIRES esp_pm irac furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
++    REQUIRES irac furi furi_hal input notification gui locale storage loader desktop btshim app_update rpc nvs_flash
      LDFRAGMENTS "main.lf"
  )
  
@@ -3231,50 +3244,26 @@ index fffb2cb..a9b9abf 100644
  
      foreach(esp32_fam_target IN LISTS ESP32_FAM_PORTED_OBJECT_TARGETS)
 diff --git a/main/app_main.c b/main/app_main.c
-index 0d4622a..e165baf 100644
+index 0d4622a..903622b 100644
 --- a/main/app_main.c
 +++ b/main/app_main.c
-@@ -5,6 +5,8 @@
+@@ -5,6 +5,7 @@
  #include <flipper_application/elf/elf_file.h>
  
  #include <esp_log.h>
-+#include <esp_pm.h>
 +#include <sdkconfig.h>
  #include <esp_rom_uart.h>
  #include <nvs.h>
  #include <nvs_flash.h>
-@@ -195,6 +197,19 @@ void app_main(void) {
- 
-     ESP_LOGI(TAG, "All services started, entering background...");
- 
-+#if CONFIG_PM_ENABLE
-+    // Battery: let the CPU drop to 80 MHz while idle (drivers lock full speed when
-+    // busy). 80 MHz is the floor where the ESP32 APB clock stays 80 MHz, so SPI/RMT/
-+    // LEDC/I2C timing is untouched. No auto light sleep: it breaks IR/LCD timing.
-+    esp_pm_config_t pm = {
-+        .max_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
-+        .min_freq_mhz = 80,
-+        .light_sleep_enable = false,
-+    };
-+    esp_err_t pm_err = esp_pm_configure(&pm);
-+    ESP_LOGI(TAG, "Power management: %s", esp_err_to_name(pm_err));
-+#endif
-+
-     // This blocks forever (thread scrubber)
-     furi_background();
- }
 diff --git a/sdkconfig.defaults.esp32 b/sdkconfig.defaults.esp32
-index 6bad9a4..ce2e737 100644
+index 6bad9a4..a909b2a 100644
 --- a/sdkconfig.defaults.esp32
 +++ b/sdkconfig.defaults.esp32
-@@ -60,3 +60,12 @@ CONFIG_MBEDTLS_DES_C=y
+@@ -60,3 +60,9 @@ CONFIG_MBEDTLS_DES_C=y
  # flash to free IRAM — ISR-critical paths stay in IRAM. Without this the link
  # overflows iram0_0_seg by ~1.8KB with the full M5Stick app set.
  CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
 +
-+# Battery: dynamic CPU frequency (80 MHz idle, full speed on demand), set up in
-+# main/app_main.c. Auto light sleep stays off (IR/LCD timing).
-+CONFIG_PM_ENABLE=y
 +
 +# Flash space: ESP-IDF info logs compiled out (warnings/errors kept). Frees room
 +# for the AC library (components/irac).
