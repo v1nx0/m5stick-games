@@ -2938,6 +2938,39 @@ index 5c54a9b..d90d4a8 100644
 +
 +/** Force the always-on top bar to repaint (call after drawing over the whole panel). */
 +void furi_hal_display_top_bar_invalidate(void);
+diff --git a/components/furi_hal/furi_hal_power.c b/components/furi_hal/furi_hal_power.c
+index 6d5140d..d15a998 100644
+--- a/components/furi_hal/furi_hal_power.c
++++ b/components/furi_hal/furi_hal_power.c
+@@ -393,11 +393,25 @@ uint8_t furi_hal_power_get_pct(void) {
+     }
+     /* AXP192 PMU (M5StickC Plus2) — more accurate than ESP32 ADC */
+     if(furi_hal_axp192_is_present()) {
+-        float mv = (float)furi_hal_axp192_get_battery_voltage_mv();
+-        if(mv <= 0.0f) {
++        /* The battery voltage sags under WiFi/BLE load, and the curve is steep near
++         * empty, so a single raw read can briefly read ~1% at ~20%. Take the max of
++         * a few quick samples (load dips are transient) and smooth the voltage with an
++         * EMA so the % can't jump on one bad read. */
++        uint16_t peak = 0;
++        for(int i = 0; i < 4; i++) {
++            uint16_t m = furi_hal_axp192_get_battery_voltage_mv();
++            if(m > peak) peak = m;
++        }
++        if(peak == 0) {
+             return furi_hal_axp192_is_vbus_present() ? 100 : 0;
+         }
+-        return furi_hal_power_voltage_to_pct(mv / 1000.0f);
++        static float mv_ema = 0.0f;
++        float mv = (float)peak;
++        if(mv_ema <= 0.0f || mv > mv_ema + 300 || mv < mv_ema - 300)
++            mv_ema = mv; /* first read, or a real jump (plugged in) -> snap */
++        else
++            mv_ema = mv_ema * 0.8f + mv * 0.2f;
++        return furi_hal_power_voltage_to_pct(mv_ema / 1000.0f);
+     }
+     /* No power IC — use the ESP32 ADC if it was successfully initialized */
+     if(!furi_hal_power.adc_ready) {
 diff --git a/components/furi_hal/furi_hal_rtc.c b/components/furi_hal/furi_hal_rtc.c
 index da51adc..8bd82a6 100644
 --- a/components/furi_hal/furi_hal_rtc.c
