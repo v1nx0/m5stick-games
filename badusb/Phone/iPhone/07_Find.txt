@@ -1,0 +1,3 @@
+REM Supported iPhone/iPad apps: open Find.
+DELAY 300
+GUI f

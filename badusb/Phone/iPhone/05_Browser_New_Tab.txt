@@ -1,0 +1,3 @@
+REM Safari: open a new tab.
+DELAY 300
+GUI t

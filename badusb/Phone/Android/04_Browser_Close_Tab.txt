@@ -1,0 +1,3 @@
+REM Chrome/Android browsers: close the current tab.
+DELAY 300
+CTRL w

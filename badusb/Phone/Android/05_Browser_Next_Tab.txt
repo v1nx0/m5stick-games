@@ -1,0 +1,3 @@
+REM Chrome/Android browsers: switch to the next tab.
+DELAY 300
+CTRL TAB

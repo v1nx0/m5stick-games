@@ -1,0 +1,3 @@
+REM Supported Android apps: open Find.
+DELAY 300
+CTRL f

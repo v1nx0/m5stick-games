@@ -1,0 +1,3 @@
+REM Android: toggle media playback.
+DELAY 300
+MEDIA PLAY_PAUSE

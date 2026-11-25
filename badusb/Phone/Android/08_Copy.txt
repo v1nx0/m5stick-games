@@ -1,0 +1,3 @@
+REM Copy the current selection.
+DELAY 300
+CTRL c

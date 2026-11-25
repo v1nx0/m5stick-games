@@ -1,0 +1,3 @@
+REM Paste into the current field.
+DELAY 300
+GUI v

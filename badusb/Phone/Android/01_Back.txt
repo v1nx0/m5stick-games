@@ -1,0 +1,3 @@
+REM Android: go back from the current screen.
+DELAY 300
+ESC

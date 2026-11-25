@@ -1,0 +1,3 @@
+REM iPhone/iPad: return to the Home Screen with a paired keyboard.
+DELAY 300
+GUI h

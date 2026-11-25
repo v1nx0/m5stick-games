@@ -1,0 +1,3 @@
+REM Safari: close the current tab.
+DELAY 300
+GUI w

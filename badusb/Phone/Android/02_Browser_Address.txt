@@ -1,0 +1,3 @@
+REM Chrome/Android browsers: focus the address field.
+DELAY 300
+CTRL l

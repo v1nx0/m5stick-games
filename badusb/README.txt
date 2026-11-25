@@ -12,3 +12,7 @@ Use only on devices you own.
 Payloads 01-30 are harmless demos and productivity shortcuts for Windows,
 macOS, Linux, browsers, and media control. USB cable HID is not possible on
 M5StickC Plus2 hardware; use the BLE keyboard connection.
+
+Phone/iPhone and Phone/Android contain 20 additional safe keyboard shortcuts.
+Pair "Keyboard New Device1", then open a payload from the matching folder.
+Some shortcuts depend on the active app and phone OS version.

@@ -1,0 +1,3 @@
+REM Chrome/Android browsers: open a new tab.
+DELAY 300
+CTRL t

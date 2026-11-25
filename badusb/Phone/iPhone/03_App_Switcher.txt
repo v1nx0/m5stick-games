@@ -1,0 +1,3 @@
+REM iPhone/iPad: switch to the next app.
+DELAY 300
+GUI TAB

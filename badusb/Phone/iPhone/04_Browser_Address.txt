@@ -1,0 +1,3 @@
+REM Safari: focus the address field.
+DELAY 300
+GUI l

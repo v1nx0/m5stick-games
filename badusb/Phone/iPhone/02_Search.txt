@@ -1,0 +1,3 @@
+REM iPhone/iPad: open system search.
+DELAY 300
+GUI SPACE
