@@ -1,5 +1,5 @@
 V:0
-T:1795630927
+T:1795634388
 D:apps
 D:apps/Games
 F:c3ae417ccbac22aa1590b70f9c6efc24:6356:apps/Games/brick_breaker.fap
@@ -111,4 +111,19 @@ F:dd723a8f4e72a9641e5109f5a1891963:89:badusb/12_Caps_Troll.txt
 F:eae6b09dd349b57224463701392735a7:168:badusb/13_Type_Clipboard_Emoji.txt
 F:7bdaf7a9d899e4734470cc9f40cf6682:128:badusb/14_Browser_NewTab.txt
 F:f33d139bba08b19e2106289e72eca6c2:106:badusb/15_Mac_Spotlight.txt
-F:91182d9eab42cde68f9a868d65881e74:439:badusb/README.txt
+F:9c399ad508b8a1397aa05c55e054d9fc:71:badusb/16_Windows_Calculator.txt
+F:1c10da30baf5f398c5ead881b429a31f:50:badusb/17_Windows_Explorer.txt
+F:7af1918aed656c231008e57e3a70ee05:45:badusb/18_Windows_Settings.txt
+F:ec10f66ba322bc2f426b9ca5d8a16559:92:badusb/19_Windows_Terminal.txt
+F:77602709ce55e868b1459ae3b57f8bcc:102:badusb/20_Windows_Date_Time.txt
+F:e8fa3f5edfabca72c9ab59eb05772ebd:53:badusb/21_Browser_Downloads.txt
+F:3775cef8b1e8a60eb6bd44d61d083ea5:51:badusb/22_Browser_History.txt
+F:697b4d0535ca92fec76b30b97cd0bf60:80:badusb/23_Browser_Reopen_Tab.txt
+F:f0d691dfe8d8ac3f6df8661113d831f3:53:badusb/24_Browser_Fullscreen.txt
+F:2c137c70c47a9871757f7caaa352342f:60:badusb/25_Media_Volume_Down.txt
+F:d3bcbe938c5548ff691b49f175f2b535:62:badusb/26_Media_Next.txt
+F:a28a6bc63904b6a526b016fad8a23bd0:68:badusb/27_Media_Previous.txt
+F:cebef3f61a94d3c4a4bc09b666795693:50:badusb/28_Mac_Lock.txt
+F:58a5de8b115a5b2f6f71520e43434b58:63:badusb/29_Mac_Screenshot.txt
+F:decd50aebb5e56db0c4c3c39deeafe0f:91:badusb/30_Linux_Terminal.txt
+F:a2b06f4b7d83c8fd516be8dcfe1ee5ac:648:badusb/README.txt
