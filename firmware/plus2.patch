@@ -810,7 +810,7 @@ index 0000000..3f695bd
 +    ac.picking = false;
 +}
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_projector.c b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
-index ac3f0c3..ab2d9d5 100644
+index ac3f0c3..8f59051 100644
 --- a/applications/main/infrared/scenes/infrared_scene_universal_projector.c
 +++ b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
 @@ -2,95 +2,62 @@
@@ -843,9 +843,9 @@ index ac3f0c3..ab2d9d5 100644
 -        infrared_scene_universal_common_item_callback,
 -        context);
 -    button_panel_add_icon(button_panel, 4, 46, &I_power_text_24x5);
-+        button_panel, i, 0, 0, 6, 20, &I_power_19x20, &I_power_hover_19x20,
++        button_panel, i, 0, 0, 6, 10, &I_power_19x20, &I_power_hover_19x20,
 +        infrared_scene_universal_common_item_callback, context);
-+    button_panel_add_label(button_panel, 2, 43, FontSecondary, "Power");
++    button_panel_add_label(button_panel, 2, 38, FontSecondary, "Power");
      infrared_brute_force_add_record(brute_force, i++, "Power");
 +
      button_panel_add_item(
@@ -860,9 +860,9 @@ index ac3f0c3..ab2d9d5 100644
 -        infrared_scene_universal_common_item_callback,
 -        context);
 -    button_panel_add_icon(button_panel, 39, 46, &I_mute_text_19x5);
-+        button_panel, i, 1, 0, 39, 20, &I_mute_19x20, &I_mute_hover_19x20,
++        button_panel, i, 1, 0, 39, 10, &I_mute_19x20, &I_mute_hover_19x20,
 +        infrared_scene_universal_common_item_callback, context);
-+    button_panel_add_label(button_panel, 38, 43, FontSecondary, "Mute");
++    button_panel_add_label(button_panel, 38, 38, FontSecondary, "Mute");
      infrared_brute_force_add_record(brute_force, i++, "Mute");
 +
 +    // Row 1: Freeze / Vol+
@@ -877,13 +877,13 @@ index ac3f0c3..ab2d9d5 100644
 -        &I_volup_hover_24x21,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 0, 1, 6, 49, &I_pause_19x20, &I_pause_hover_19x20,
++        button_panel, i, 0, 1, 6, 39, &I_pause_19x20, &I_pause_hover_19x20,
 +        infrared_scene_universal_common_item_callback, context);
-+    button_panel_add_label(button_panel, 1, 72, FontSecondary, "Freeze");
++    button_panel_add_label(button_panel, 1, 67, FontSecondary, "Freeze");
 +    infrared_brute_force_add_record(brute_force, i++, "Freeze");
 +
 +    button_panel_add_item(
-+        button_panel, i, 1, 1, 37, 49, &I_volup_24x21, &I_volup_hover_24x21,
++        button_panel, i, 1, 1, 37, 39, &I_volup_24x21, &I_volup_hover_24x21,
 +        infrared_scene_universal_common_item_callback, context);
      infrared_brute_force_add_record(brute_force, i++, "Vol_up");
  
@@ -899,7 +899,7 @@ index ac3f0c3..ab2d9d5 100644
 -        &I_voldown_hover_24x21,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 0, 2, 4, 78, &I_voldown_24x21, &I_voldown_hover_24x21,
++        button_panel, i, 0, 2, 4, 68, &I_voldown_24x21, &I_voldown_hover_24x21,
 +        infrared_scene_universal_common_item_callback, context);
      infrared_brute_force_add_record(brute_force, i++, "Vol_dn");
 +
@@ -914,9 +914,9 @@ index ac3f0c3..ab2d9d5 100644
 -        &I_play_hover_19x20,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 1, 2, 39, 78, &I_play_19x20, &I_play_hover_19x20,
++        button_panel, i, 1, 2, 39, 68, &I_play_19x20, &I_play_hover_19x20,
 +        infrared_scene_universal_common_item_callback, context);
-+    button_panel_add_label(button_panel, 38, 101, FontSecondary, "Play");
++    button_panel_add_label(button_panel, 38, 96, FontSecondary, "Play");
      infrared_brute_force_add_record(brute_force, i++, "Play");
 -    button_panel_add_icon(button_panel, 6, 80, &I_play_text_19x5);
 +
@@ -932,15 +932,15 @@ index ac3f0c3..ab2d9d5 100644
 -        &I_pause_hover_19x20,
 -        infrared_scene_universal_common_item_callback,
 -        context);
-+        button_panel, i, 0, 3, 6, 102, &I_pause_19x20, &I_pause_hover_19x20,
++        button_panel, i, 0, 3, 6, 98, &I_pause_19x20, &I_pause_hover_19x20,
 +        infrared_scene_universal_common_item_callback, context);
-+    button_panel_add_label(button_panel, 2, 125, FontSecondary, "Pause");
++    button_panel_add_label(button_panel, 2, 126, FontSecondary, "Pause");
      infrared_brute_force_add_record(brute_force, i++, "Pause");
 -    button_panel_add_icon(button_panel, 4, 109, &I_pause_text_23x5);
  
 -    button_panel_add_label(button_panel, 10, 11, FontPrimary, "Projector");
 -    button_panel_add_icon(button_panel, 34, 68, &I_vol_ac_text_30x30);
-+    button_panel_add_label(button_panel, 1, 10, FontPrimary, "Projector");
++    button_panel_add_label(button_panel, 1, 8, FontPrimary, "Projector");
  
      infrared_scene_universal_common_on_enter(context);
  }
