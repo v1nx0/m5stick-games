@@ -31,7 +31,7 @@ REMOTES = {
                                 ("Red", r"(red|r)"), ("Green", r"(green|g)"), ("Blue", r"(blue|b)"),
                                 ("White", r"(white|w)")]),
     "projectors": (["Projectors"], [("Power", PWR), ("Mute", MUTE), ("Vol_up", VUP), ("Vol_dn", VDN),
-                                    ("Play", PLAY), ("Pause", PAUSE)]),
+                                    ("Play", PLAY), ("Pause", PAUSE), ("Freeze", r"(freeze|frz)")]),
     # AC "Power" frames carry a whole state (mode/temp) - only plain Off is safe to merge
     "ac": (["ACs"], [("Off", r"(off|power_?off|turn_?off)")]),
 }

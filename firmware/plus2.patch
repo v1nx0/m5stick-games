@@ -105,10 +105,10 @@ index 89c03b8..be263e6 100644
  ADD_SCENE(infrared, universal_projector, UniversalProjector)
 diff --git a/applications/main/infrared/scenes/infrared_scene_find_remote.c b/applications/main/infrared/scenes/infrared_scene_find_remote.c
 new file mode 100644
-index 0000000..4796718
+index 0000000..d97ac06
 --- /dev/null
 +++ b/applications/main/infrared/scenes/infrared_scene_find_remote.c
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,195 @@
 +#include "../infrared_app_i.h" // IWYU pragma: keep
 +#include <strings.h> // strcasecmp
 +
@@ -121,6 +121,7 @@ index 0000000..4796718
 +#define FIND_STATE_OPENED     0x10u
 +#define FIND_EVT_NEXT         0x200u
 +#define FIND_EVT_FOUND        0x201u
++#define FIND_EVT_START        0x202u
 +#define FIND_MAX_BRANDS       96
 +
 +static struct {
@@ -128,6 +129,7 @@ index 0000000..4796718
 +    size_t count, idx;
 +    FuriTimer* timer;
 +    const char* folder;
++    bool projectors;
 +} find;
 +
 +static void find_tick(void* context) {
@@ -139,6 +141,25 @@ index 0000000..4796718
 +    InfraredApp* infrared = context;
 +    if(result == DialogExResultCenter)
 +        view_dispatcher_send_custom_event(infrared->view_dispatcher, FIND_EVT_FOUND);
++}
++
++static void find_start_result(DialogExResult result, void* context) {
++    InfraredApp* infrared = context;
++    if(result == DialogExResultCenter)
++        view_dispatcher_send_custom_event(infrared->view_dispatcher, FIND_EVT_START);
++}
++
++// Start prompt: nothing is sent until the user presses Start (like Find my AC).
++static void find_prompt(InfraredApp* infrared) {
++    DialogEx* d = infrared->dialog_ex;
++    dialog_ex_reset(d);
++    dialog_ex_set_header(
++        d, find.projectors ? "Find my Projector" : "Find my TV", 64, 2, AlignCenter, AlignTop);
++    dialog_ex_set_text(d, "Sends each brand's\nPower in turn", 64, 30, AlignCenter, AlignCenter);
++    dialog_ex_set_center_button_text(d, "Start");
++    dialog_ex_set_result_callback(d, find_start_result);
++    dialog_ex_set_context(d, infrared);
++    view_dispatcher_switch_to_view(infrared->view_dispatcher, InfraredViewDialogEx);
 +}
 +
 +static void find_stop(void) {
@@ -227,8 +248,8 @@ index 0000000..4796718
 +        scene_manager_previous_scene(infrared->scene_manager);
 +        return;
 +    }
-+    find.folder = (state & FIND_STATE_PROJECTORS) ? EXT_PATH("infrared/Projectors") :
-+                                                     EXT_PATH("infrared/TVs");
++    find.projectors = state & FIND_STATE_PROJECTORS;
++    find.folder = find.projectors ? EXT_PATH("infrared/Projectors") : EXT_PATH("infrared/TVs");
 +    find.count = 0;
 +    find.idx = 0;
 +    find_list();
@@ -237,14 +258,19 @@ index 0000000..4796718
 +        scene_manager_previous_scene(infrared->scene_manager);
 +        return;
 +    }
-+    find.timer = furi_timer_alloc(find_tick, FuriTimerTypePeriodic, infrared);
-+    furi_timer_start(find.timer, furi_ms_to_ticks(infrared_scan_step_ms()));
-+    find_step(infrared);
++    find_prompt(infrared); // wait for Start; don't blast Power on enter
 +}
 +
 +bool infrared_scene_find_remote_on_event(void* context, SceneManagerEvent event) {
 +    InfraredApp* infrared = context;
 +    if(event.type != SceneManagerEventTypeCustom) return false; // Back: default = leave
++    if(event.event == FIND_EVT_START && find.count && !find.timer) {
++        find.idx = 0;
++        find.timer = furi_timer_alloc(find_tick, FuriTimerTypePeriodic, infrared);
++        furi_timer_start(find.timer, furi_ms_to_ticks(infrared_scan_step_ms()));
++        find_step(infrared);
++        return true;
++    }
 +    if(event.event == FIND_EVT_NEXT && find.count) {
 +        if(find.idx + 1 >= find.count) {
 +            scene_manager_previous_scene(infrared->scene_manager); // tried them all
@@ -3568,3 +3594,151 @@ index 6bad9a4..a909b2a 100644
 +# for the AC library (components/irac).
 +CONFIG_LOG_DEFAULT_LEVEL_WARN=y
 +CONFIG_LOG_DEFAULT_LEVEL=2
+diff --git a/applications/main/infrared/scenes/infrared_scene_universal_projector.c b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
+index ac3f0c3..513c4ed 100644
+--- a/applications/main/infrared/scenes/infrared_scene_universal_projector.c
++++ b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
+@@ -2,95 +2,75 @@
+ 
+ #include "common/infrared_scene_universal_common.h"
+ 
++// Projector scan panel. Each button brute-forces that named record across every
++// brand in projectors(_plus).ir. On=Power; Off=Mute (on many projectors Mute is the
++// real power-off); Unfreeze=Freeze again (Freeze is a toggle on nearly all models).
++// No Freeze/Unfreeze icon ships, so those reuse pause/play with a text label.
+ void infrared_scene_universal_projector_on_enter(void* context) {
+     InfraredApp* infrared = context;
+     ButtonPanel* button_panel = infrared->button_panel;
+     InfraredBruteForce* brute_force = infrared->brute_force;
+ 
+     infrared_brute_force_set_db_filename(brute_force, EXT_PATH("infrared/assets/projectors.ir"));
+-    //TODO Improve Projectors universal remote
+-    button_panel_reserve(button_panel, 2, 3);
++    button_panel_reserve(button_panel, 3, 3);
+     uint32_t i = 0;
++
++    // Row 0: On / Off / Mute
+     button_panel_add_item(
+-        button_panel,
+-        i,
+-        0,
+-        0,
+-        6,
+-        24,
+-        &I_power_19x20,
+-        &I_power_hover_19x20,
+-        infrared_scene_universal_common_item_callback,
+-        context);
+-    button_panel_add_icon(button_panel, 4, 46, &I_power_text_24x5);
++        button_panel, i, 0, 0, 4, 20, &I_power_19x20, &I_power_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 6, 44, FontSecondary, "On");
+     infrared_brute_force_add_record(brute_force, i++, "Power");
++
++    button_panel_add_item(
++        button_panel, i, 1, 0, 46, 20, &I_off_19x20, &I_off_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 48, 44, FontSecondary, "Off");
++    infrared_brute_force_add_record(brute_force, i++, "Mute"); // Off = Mute code
++
+     button_panel_add_item(
+-        button_panel,
+-        i,
+-        1,
+-        0,
+-        39,
+-        24,
+-        &I_mute_19x20,
+-        &I_mute_hover_19x20,
+-        infrared_scene_universal_common_item_callback,
+-        context);
+-    button_panel_add_icon(button_panel, 39, 46, &I_mute_text_19x5);
++        button_panel, i, 2, 0, 88, 20, &I_mute_19x20, &I_mute_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_icon(button_panel, 88, 42, &I_mute_text_19x5);
+     infrared_brute_force_add_record(brute_force, i++, "Mute");
++
++    // Row 1: Freeze / Unfreeze / Vol+
+     button_panel_add_item(
+-        button_panel,
+-        i,
+-        1,
+-        1,
+-        37,
+-        55,
+-        &I_volup_24x21,
+-        &I_volup_hover_24x21,
+-        infrared_scene_universal_common_item_callback,
+-        context);
++        button_panel, i, 0, 1, 4, 56, &I_pause_19x20, &I_pause_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 2, 80, FontSecondary, "Frz");
++    infrared_brute_force_add_record(brute_force, i++, "Freeze");
++
++    button_panel_add_item(
++        button_panel, i, 1, 1, 46, 56, &I_play_19x20, &I_play_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_label(button_panel, 44, 80, FontSecondary, "Unfrz");
++    infrared_brute_force_add_record(brute_force, i++, "Freeze"); // toggle: send Freeze again
++
++    button_panel_add_item(
++        button_panel, i, 2, 1, 86, 55, &I_volup_24x21, &I_volup_hover_24x21,
++        infrared_scene_universal_common_item_callback, context);
+     infrared_brute_force_add_record(brute_force, i++, "Vol_up");
+ 
++    // Row 2: Vol- / Play / Pause
+     button_panel_add_item(
+-        button_panel,
+-        i,
+-        1,
+-        2,
+-        37,
+-        89,
+-        &I_voldown_24x21,
+-        &I_voldown_hover_24x21,
+-        infrared_scene_universal_common_item_callback,
+-        context);
++        button_panel, i, 0, 2, 5, 92, &I_voldown_24x21, &I_voldown_hover_24x21,
++        infrared_scene_universal_common_item_callback, context);
+     infrared_brute_force_add_record(brute_force, i++, "Vol_dn");
++
+     button_panel_add_item(
+-        button_panel,
+-        i,
+-        0,
+-        1,
+-        6,
+-        58,
+-        &I_play_19x20,
+-        &I_play_hover_19x20,
+-        infrared_scene_universal_common_item_callback,
+-        context);
++        button_panel, i, 1, 2, 46, 92, &I_play_19x20, &I_play_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_icon(button_panel, 46, 114, &I_play_text_19x5);
+     infrared_brute_force_add_record(brute_force, i++, "Play");
+-    button_panel_add_icon(button_panel, 6, 80, &I_play_text_19x5);
++
+     button_panel_add_item(
+-        button_panel,
+-        i,
+-        0,
+-        2,
+-        6,
+-        87,
+-        &I_pause_19x20,
+-        &I_pause_hover_19x20,
+-        infrared_scene_universal_common_item_callback,
+-        context);
++        button_panel, i, 2, 2, 88, 92, &I_pause_19x20, &I_pause_hover_19x20,
++        infrared_scene_universal_common_item_callback, context);
++    button_panel_add_icon(button_panel, 86, 114, &I_pause_text_23x5);
+     infrared_brute_force_add_record(brute_force, i++, "Pause");
+-    button_panel_add_icon(button_panel, 4, 109, &I_pause_text_23x5);
+ 
+-    button_panel_add_label(button_panel, 10, 11, FontPrimary, "Projector");
+-    button_panel_add_icon(button_panel, 34, 68, &I_vol_ac_text_30x30);
++    button_panel_add_label(button_panel, 2, 10, FontPrimary, "Projector");
+ 
+     infrared_scene_universal_common_on_enter(context);
+ }
