@@ -1,0 +1,5 @@
+REM Opens a new browser tab and searches (browser must be focused).
+DELAY 500
+CTRL t
+DELAY 500
+STRINGLN flipper zero esp32 port

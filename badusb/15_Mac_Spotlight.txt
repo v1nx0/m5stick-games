@@ -1,0 +1,5 @@
+REM macOS: opens Spotlight and launches the Calculator.
+DELAY 500
+GUI SPACE
+DELAY 500
+STRINGLN Calculator

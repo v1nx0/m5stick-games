@@ -1,0 +1,5 @@
+REM Harmless prank: toggles Caps Lock a few times.
+DELAY 300
+REPEAT 6
+CAPSLOCK
+DELAY 150

@@ -1,0 +1,3 @@
+REM Mutes the system volume.
+DELAY 300
+MEDIA MUTE

@@ -1,0 +1,3 @@
+REM Turns the volume up 10 steps (media keys).
+REPEAT 10
+MEDIA VOLUME_UP

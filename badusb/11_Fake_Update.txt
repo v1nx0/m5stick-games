@@ -1,0 +1,7 @@
+REM Prank: opens a full-screen fake "update" web page in the browser.
+DELAY 500
+GUI r
+DELAY 400
+STRINGLN https://fakeupdate.net/win10ue/
+DELAY 2000
+F11

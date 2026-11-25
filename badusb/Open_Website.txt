@@ -1,6 +1,0 @@
-REM Opens a website in the default browser (Windows Run dialog).
-DELAY 500
-GUI r
-DELAY 400
-STRING https://github.com/v1nx0/m5stick-games
-ENTER

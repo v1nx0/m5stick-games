@@ -1,0 +1,3 @@
+REM Opens Task Manager.
+DELAY 300
+CTRL SHIFT ESC

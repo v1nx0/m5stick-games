@@ -1,0 +1,3 @@
+REM Play/pause the current media.
+DELAY 300
+MEDIA PLAY_PAUSE

@@ -1,0 +1,3 @@
+REM Opens the Windows Snipping Tool (Win+Shift+S).
+DELAY 300
+GUI SHIFT s

@@ -1,3 +1,0 @@
-REM Locks a Windows PC (Win+L).
-DELAY 500
-GUI l

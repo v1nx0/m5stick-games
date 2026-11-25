@@ -1,0 +1,9 @@
+REM Opens Notepad and types a little ASCII art.
+DELAY 500
+GUI r
+DELAY 400
+STRINGLN notepad
+DELAY 1200
+STRINGLN ( o_o )  M5StickC Plus2
+STRINGLN  <( + )>
+STRING   /   \

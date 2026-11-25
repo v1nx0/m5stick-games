@@ -1,0 +1,3 @@
+REM Shows the desktop (minimize all windows) - Windows.
+DELAY 300
+GUI d

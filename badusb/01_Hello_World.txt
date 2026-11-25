@@ -1,0 +1,3 @@
+REM Types a greeting. Pair the stick as a Bluetooth keyboard first.
+DELAY 800
+STRINGLN Hello from M5StickC Plus2!
