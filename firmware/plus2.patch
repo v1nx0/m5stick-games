@@ -1106,7 +1106,7 @@ index 1f78604..5b61ff6 100644
  }
  
 diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
-index 8a5d7bd..bd559d1 100644
+index 8a5d7bd..f6bd63b 100644
 --- a/applications/main/wlan_app/wlan_sd_update.c
 +++ b/applications/main/wlan_app/wlan_sd_update.c
 @@ -25,6 +25,11 @@
@@ -1293,16 +1293,18 @@ index 8a5d7bd..bd559d1 100644
      if(u->cancel) {
          u->phase = WlanSdUpdateIdle;
          sd_update_finish(u);
-@@ -475,9 +565,15 @@ static void sd_update_task(void* arg) {
+@@ -475,9 +565,17 @@ static void sd_update_task(void* arg) {
      u->phase = WlanSdUpdateDownloading;
      u->percent = 0;
  
 -    bool ok = sd_update_sync(u);
 +    uint32_t fetched = 0;
 +    bool ok = up_to_date || sd_update_sync(u, SD_UPDATE_RAW_BASE, NULL, &fetched);
-+    // bigger IR code packs (*_plus.ir) from our repo: checked on every update, since
-+    // m5resources' version.txt says nothing about them
-+    if(ok && !u->cancel) ok = sd_update_sync(u, APP_STORE_OWN_BASE, "infrared/", &fetched);
++    // extra files from our repo (IR code packs, Bad USB scripts): checked on every
++    // update, since m5resources' version.txt says nothing about them
++    static const char* const own_dirs[] = {"infrared/", "badusb/"};
++    for(size_t i = 0; i < sizeof(own_dirs) / sizeof(own_dirs[0]) && ok && !u->cancel; i++)
++        ok = sd_update_sync(u, APP_STORE_OWN_BASE, own_dirs[i], &fetched);
  
 -    if(ok) {
 +    if(ok && up_to_date && !fetched) {
@@ -1311,7 +1313,7 @@ index 8a5d7bd..bd559d1 100644
          u->percent = 100;
          u->phase = WlanSdUpdateDone;
      } else if(u->cancel && u->phase != WlanSdUpdateError) {
-@@ -487,6 +583,14 @@ static void sd_update_task(void* arg) {
+@@ -487,6 +585,14 @@ static void sd_update_task(void* arg) {
      sd_update_finish(u);
  }
  
@@ -1326,7 +1328,7 @@ index 8a5d7bd..bd559d1 100644
  // ---------------------------------------------------------------------------
  // Public API
  // ---------------------------------------------------------------------------
-@@ -502,6 +606,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -502,6 +608,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
      u->done_files = 0;
      u->total_files = 0;
      u->err[0] = '\0';
@@ -1336,7 +1338,7 @@ index 8a5d7bd..bd559d1 100644
      sd_update_set_file(u, "version.txt");
      return u;
  }
-@@ -509,10 +616,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -509,10 +618,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
  void wlan_sd_update_free(WlanSdUpdate* u) {
      if(!u) return;
      wlan_sd_update_cancel(u);
@@ -1400,7 +1402,7 @@ index 8a5d7bd..bd559d1 100644
      if(u->running) return;
      u->cancel = false;
      u->percent = 0;
-@@ -524,17 +684,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
+@@ -524,17 +686,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
      u->phase = WlanSdUpdateChecking;
      u->running = true;
      static StaticTask_t sd_upd_tcb;
@@ -1587,10 +1589,10 @@ index 0000000..b37cafd
 +)
 diff --git a/applications_user/games_menu/games_menu.c b/applications_user/games_menu/games_menu.c
 new file mode 100644
-index 0000000..eac61d0
+index 0000000..06cc3b6
 --- /dev/null
 +++ b/applications_user/games_menu/games_menu.c
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,107 @@
 +// Games: lists the built-in game pack (no SD card on M5StickC Plus2, so the
 +// games are compiled into the firmware) and runs the picked one in this thread.
 +// Calling the entry directly: a loader start from inside a running app is
@@ -1604,6 +1606,7 @@ index 0000000..eac61d0
 +extern int32_t snake_game_app(void* p);
 +extern int32_t sky_hopper_app(void* p);
 +extern int32_t sky_hopper_color_app(void* p);
++extern int32_t rps_color_app(void* p);
 +extern int32_t brick_breaker_app(void* p);
 +extern int32_t mines_app(void* p);
 +extern int32_t tic_tac_toe_app(void* p);
@@ -1627,6 +1630,7 @@ index 0000000..eac61d0
 +} GAMES[] = {
 +    {"Snake", snake_game_app, RGB(0, 24, 0), RGB(80, 255, 80)},
 +    {"Sky Hopper Color", sky_hopper_color_app, 0, 0}, // full color, draws its own
++    {"Rock Paper Scissors", rps_color_app, 0, 0},
 +    {"Sky Hopper", sky_hopper_app, RGB(10, 30, 70), RGB(130, 210, 255)},
 +    {"Brick Breaker", brick_breaker_app, RGB(24, 0, 36), RGB(255, 150, 0)},
 +    {"Mines", mines_app, RGB(30, 30, 30), RGB(255, 80, 80)},
@@ -2155,6 +2159,267 @@ index 0000000..45fc19a
 +    furi_message_queue_free(q);
 +    furi_mutex_free(a->mutex);
 +    free(a);
++    return 0;
++}
+diff --git a/applications_user/rps_color/application.fam b/applications_user/rps_color/application.fam
+new file mode 100644
+index 0000000..c345302
+--- /dev/null
++++ b/applications_user/rps_color/application.fam
+@@ -0,0 +1,10 @@
++App(
++    appid="rps_color",
++    name="Rock Paper Scissors",
++    apptype=FlipperAppType.EXTERNAL,
++    entry_point="rps_color_app",
++    requires=["gui"],
++    stack_size=4 * 1024,
++    fap_icon="icon_10px.png",
++    fap_category="Games",
++)
+diff --git a/applications_user/rps_color/icon_10px.png b/applications_user/rps_color/icon_10px.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..1ede9a5480c7f74012c85f8f5a45e048561a8898
+GIT binary patch
+literal 87
+zcmeAS@N?(olHy`uVBq!ia0vp^AT}2xkYHHq`AGms$$7dshE&W+PGDekJ65&KormYQ
+jq{KhN1_>Va83!IQxNT!Od7;a_0;I#!)z4*}Q$iB}BsCVA
+
+literal 0
+HcmV?d00001
+
+diff --git a/applications_user/rps_color/rps_color.c b/applications_user/rps_color/rps_color.c
+new file mode 100644
+index 0000000..9d8ee89
+--- /dev/null
++++ b/applications_user/rps_color/rps_color.c
+@@ -0,0 +1,228 @@
++// Rock Paper Scissors Color: full-screen color game for the M5StickC Plus2.
++// Original art, drawn in code. B cycles your pick, A plays, Power quits.
++// Direct panel draw like Sky Hopper Color / Doom (no 128x64 framebuffer).
++#include <furi.h>
++#include <furi_hal.h>
++#include <gui/gui.h>
++#include <input/input.h>
++#include <esp_lcd_panel_ops.h>
++#include <esp_heap_caps.h>
++#include <math.h>
++#include <stdlib.h>
++#include <string.h>
++
++#define W 240
++#define H 135
++#define BAND 15
++
++static inline uint16_t rgb(int r, int g, int b) {
++    uint16_t c = (uint16_t)(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3));
++    return (uint16_t)((c >> 8) | (c << 8));
++}
++
++typedef enum { Rock, Paper, Scissors } Choice;
++typedef enum { Pick, Reveal } Phase;
++
++typedef struct {
++    Phase phase;
++    Choice you, cpu;
++    int result; // -1 lose, 0 draw, 1 win
++    int wins, losses, draws;
++    uint32_t reveal_frame, frame;
++} Game;
++
++static const char* const NAMES[] = {"ROCK", "PAPER", "SCISSORS"};
++
++// ---- 3x5 font ----
++static const char FC[] = "0123456789ABCDEFGHIKLMNOPRSTUWY ?:";
++static const uint8_t F[][5] = {
++    {7, 5, 5, 5, 7}, {2, 6, 2, 2, 7}, {7, 1, 7, 4, 7}, {7, 1, 7, 1, 7}, {5, 5, 7, 1, 1},
++    {7, 4, 7, 1, 7}, {7, 4, 7, 5, 7}, {7, 1, 1, 1, 1}, {7, 5, 7, 5, 7}, {7, 5, 7, 1, 7},
++    {2, 5, 7, 5, 5}, {6, 5, 6, 5, 6}, {3, 4, 4, 4, 3}, {6, 5, 5, 5, 6}, {7, 4, 6, 4, 7},
++    {7, 4, 6, 4, 4}, {7, 4, 5, 5, 7}, {5, 5, 7, 5, 5}, {7, 2, 2, 2, 7}, {1, 1, 1, 5, 2},
++    {5, 6, 4, 6, 5}, {4, 4, 4, 4, 7}, {5, 7, 7, 5, 5}, {5, 7, 7, 7, 5}, {7, 5, 5, 5, 7},
++    {7, 5, 7, 4, 4}, {6, 5, 6, 5, 5}, {7, 4, 7, 1, 7}, {7, 2, 2, 2, 2}, {5, 5, 5, 5, 7},
++    {5, 5, 7, 7, 5}, {5, 5, 2, 2, 2}, {0, 0, 0, 0, 0}, {7, 1, 3, 0, 2}, {0, 2, 0, 2, 0},
++};
++
++static int gi(char c) {
++    const char* p = strchr(FC, c);
++    return (p && c) ? (int)(p - FC) : -1;
++}
++
++static void text(uint16_t* buf, int y0, int h, const char* s, int tx, int ty, int sc, uint16_t col) {
++    for(int i = 0; s[i]; i++) {
++        int g = gi(s[i]);
++        if(g < 0) continue;
++        int gx0 = tx + i * 4 * sc;
++        for(int gy = 0; gy < 5; gy++)
++            for(int sy = 0; sy < sc; sy++) {
++                int y = ty + gy * sc + sy - y0;
++                if(y < 0 || y >= h) continue;
++                for(int gx = 0; gx < 3; gx++)
++                    if(F[g][gy] & (4 >> gx))
++                        for(int sx = 0; sx < sc; sx++) {
++                            int x = gx0 + gx * sc + sx;
++                            if(x >= 0 && x < W) buf[y * W + x] = col;
++                        }
++            }
++    }
++}
++
++static int twidth(const char* s, int sc) {
++    return (int)strlen(s) * 4 * sc - sc;
++}
++
++// disc helper drawn per band
++static void disc(uint16_t* buf, int y0, int h, int cx, int cy, int r, uint16_t col) {
++    for(int yy = 0; yy < h; yy++) {
++        int dy = y0 + yy - cy;
++        if(dy < -r || dy > r) continue;
++        int half = (int)sqrtf((float)(r * r - dy * dy));
++        for(int x = cx - half; x <= cx + half; x++)
++            if(x >= 0 && x < W) buf[yy * W + x] = col;
++    }
++}
++
++static void rect(uint16_t* buf, int y0, int h, int x0, int ry0, int w, int rh, uint16_t col) {
++    for(int yy = 0; yy < h; yy++) {
++        int y = y0 + yy;
++        if(y < ry0 || y >= ry0 + rh) continue;
++        for(int x = x0; x < x0 + w && x < W; x++)
++            if(x >= 0) buf[yy * W + x] = col;
++    }
++}
++
++// Draw a Rock/Paper/Scissors emblem centred at (cx, cy) in a band.
++static void emblem(uint16_t* buf, int y0, int h, int cx, int cy, Choice c, bool big) {
++    int s = big ? 30 : 20;
++    if(c == Rock) {
++        disc(buf, y0, h, cx, cy, s, rgb(130, 120, 110));
++        disc(buf, y0, h, cx - s / 3, cy - s / 3, s / 3, rgb(175, 165, 150)); // highlight
++    } else if(c == Paper) {
++        rect(buf, y0, h, cx - s, cy - s + 4, 2 * s, 2 * s - 8, rgb(245, 245, 235));
++        for(int k = -1; k < 3; k++)
++            rect(buf, y0, h, cx - s + 5, cy - s / 2 + k * 8, 2 * s - 10, 2, rgb(120, 160, 220));
++    } else {
++        // scissors: two crossing blades + handles
++        for(int t = -s; t <= s; t++) {
++            disc(buf, y0, h, cx + t, cy + t, 2, rgb(200, 205, 215));
++            disc(buf, y0, h, cx + t, cy - t, 2, rgb(200, 205, 215));
++        }
++        disc(buf, y0, h, cx - s, cy + s, 6, rgb(230, 70, 70));
++        disc(buf, y0, h, cx - s, cy - s, 6, rgb(230, 70, 70));
++        disc(buf, y0, h, cx - s, cy + s, 3, rgb(60, 40, 40));
++        disc(buf, y0, h, cx - s, cy - s, 3, rgb(60, 40, 40));
++    }
++}
++
++static void play(Game* g) {
++    g->cpu = (Choice)(rand() % 3);
++    if(g->you == g->cpu)
++        g->result = 0, g->draws++;
++    else if((g->you == Rock && g->cpu == Scissors) || (g->you == Paper && g->cpu == Rock) ||
++            (g->you == Scissors && g->cpu == Paper))
++        g->result = 1, g->wins++;
++    else
++        g->result = -1, g->losses++;
++    g->phase = Reveal;
++    g->reveal_frame = g->frame;
++}
++
++static void render(Game* g, esp_lcd_panel_handle_t panel, uint16_t* buf) {
++    char sc[24];
++    snprintf(sc, sizeof(sc), "W%d L%d D%d", g->wins, g->losses, g->draws);
++
++    furi_hal_spi_bus_lock();
++    for(int y0 = 0; y0 < H; y0 += BAND) {
++        int h = H - y0 < BAND ? H - y0 : BAND;
++        // background colour per phase/result, top (dark) to bottom (bright)
++        int t0r, t0g, t0b, t1r, t1g, t1b;
++        if(g->phase == Reveal && g->result == 1) {
++            t0r = 20, t0g = 70, t0b = 30, t1r = 40, t1g = 150, t1b = 60;
++        } else if(g->phase == Reveal && g->result == -1) {
++            t0r = 80, t0g = 20, t0b = 25, t1r = 170, t1g = 45, t1b = 50;
++        } else if(g->phase == Reveal) {
++            t0r = 60, t0g = 55, t0b = 20, t1r = 130, t1g = 115, t1b = 40;
++        } else {
++            t0r = 25, t0g = 30, t0b = 60, t1r = 60, t1g = 70, t1b = 130;
++        }
++        for(int r = 0; r < h; r++) {
++            float t = (float)(y0 + r) / H;
++            uint16_t col = rgb(
++                (int)(t0r + (t1r - t0r) * t), (int)(t0g + (t1g - t0g) * t),
++                (int)(t0b + (t1b - t0b) * t));
++            for(int x = 0; x < W; x++) buf[r * W + x] = col;
++        }
++        const uint16_t white = rgb(255, 255, 255), dim = rgb(180, 190, 210);
++        text(buf, y0, h, "YOU", 32, 6, 2, white);
++        text(buf, y0, h, "CPU", 240 - 32 - twidth("CPU", 2), 6, 2, white);
++        text(buf, y0, h, sc, W / 2 - twidth(sc, 2) / 2, 28, 2, dim);
++
++        emblem(buf, y0, h, 56, 66, g->you, true);
++        if(g->phase == Reveal) {
++            emblem(buf, y0, h, 184, 66, g->cpu, true);
++            const char* m = g->result == 1 ? "YOU WIN" : g->result == -1 ? "YOU LOSE" : "DRAW";
++            text(buf, y0, h, m, W / 2 - twidth(m, 3) / 2, 104, 3, white);
++        } else {
++            text(buf, y0, h, "?", 184 - 9, 50, 5, dim);
++            text(buf, y0, h, NAMES[g->you], 56 - twidth(NAMES[g->you], 2) / 2, 104, 2, white);
++            text(buf, y0, h, "B PICK  A GO", W / 2 - twidth("B PICK  A GO", 1), 124, 1, dim);
++        }
++    }
++    furi_hal_spi_bus_unlock();
++}
++
++static void input_cb(const void* value, void* ctx) {
++    const InputEvent* e = value;
++    furi_message_queue_put(ctx, e, 0);
++}
++
++int32_t rps_color_app(void* p) {
++    UNUSED(p);
++    esp_lcd_panel_handle_t panel = furi_hal_display_get_panel_handle();
++    if(!panel || furi_hal_display_get_h_res() != W || furi_hal_display_get_v_res() != H) return 0;
++    uint16_t* buf = heap_caps_malloc(W * BAND * sizeof(uint16_t), MALLOC_CAP_DMA);
++    if(!buf) return 0;
++
++    Game* g = malloc(sizeof(Game));
++    memset(g, 0, sizeof(Game));
++    srand(furi_get_tick());
++
++    FuriMessageQueue* q = furi_message_queue_alloc(8, sizeof(InputEvent));
++    FuriPubSub* input = furi_record_open(RECORD_INPUT_EVENTS);
++    FuriPubSubSubscription* sub = furi_pubsub_subscribe(input, input_cb, q);
++    Gui* gui = furi_record_open(RECORD_GUI);
++    gui_direct_draw_acquire(gui);
++
++    for(bool run = true; run;) {
++        uint32_t t0 = furi_get_tick();
++        InputEvent e;
++        while(furi_message_queue_get(q, &e, 0) == FuriStatusOk) {
++            if(e.key == InputKeyBack && e.type == InputTypeShort) run = false;
++            if(e.type != InputTypePress && e.type != InputTypeShort) continue;
++            if(g->phase == Pick) {
++                if(e.key == InputKeyDown || e.key == InputKeyUp || e.key == InputKeyRight ||
++                   e.key == InputKeyLeft)
++                    g->you = (Choice)((g->you + (e.key == InputKeyUp || e.key == InputKeyLeft ? 2 : 1)) % 3);
++                if(e.key == InputKeyOk) play(g);
++            } else if(g->frame - g->reveal_frame > 10) {
++                g->phase = Pick; // any press ~0.5s after reveal -> next round
++            }
++        }
++        g->frame++;
++        render(g, panel, buf);
++        uint32_t spent = furi_get_tick() - t0, frame = furi_ms_to_ticks(50);
++        if(spent < frame) furi_delay_tick(frame - spent);
++    }
++
++    gui_direct_draw_release(gui);
++    furi_hal_display_top_bar_invalidate();
++    furi_record_close(RECORD_GUI);
++    furi_pubsub_unsubscribe(input, sub);
++    furi_record_close(RECORD_INPUT_EVENTS);
++    furi_message_queue_free(q);
++    heap_caps_free(buf);
++    free(g);
 +    return 0;
 +}
 diff --git a/applications_user/sky_hopper_color/application.fam b/applications_user/sky_hopper_color/application.fam
@@ -3093,10 +3358,10 @@ index 0000000..4ec0f4c
 @@ -0,0 +1 @@
 +// Empty on purpose: keeps IRremoteESP8266 (UNIT_TEST) from pulling in iostream.
 diff --git a/fam_config.py b/fam_config.py
-index 36c143f..f7bfc7b 100644
+index 36c143f..dea6ae7 100644
 --- a/fam_config.py
 +++ b/fam_config.py
-@@ -78,6 +78,23 @@ APPS = [
+@@ -78,6 +78,24 @@ APPS = [
      "js_infrared",
      "js_blebeacon",
      "qflipper_app",
@@ -3107,6 +3372,7 @@ index 36c143f..f7bfc7b 100644
 +    "snake",
 +    "sky_hopper",
 +    "sky_hopper_color",
++    "rps_color",
 +    "brick_breaker",
 +    "mines",
 +    "tic_tac_toe",
@@ -3120,7 +3386,7 @@ index 36c143f..f7bfc7b 100644
      # js_serial, js_gpio, js_i2c, js_spi excluded - need HAL porting
  ]
  
-@@ -117,6 +134,14 @@ if _board in _boards_without_subghz:
+@@ -117,6 +135,14 @@ if _board in _boards_without_subghz:
  if _board in _boards_without_nrf24:
      APPS = [a for a in APPS if a != "nrf24"]
  

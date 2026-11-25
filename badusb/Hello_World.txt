@@ -1,0 +1,4 @@
+REM Demo: types a greeting. Pair the stick as a Bluetooth keyboard first.
+DELAY 1000
+STRING Hello from M5StickC Plus2!
+ENTER

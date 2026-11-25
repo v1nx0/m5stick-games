@@ -3,7 +3,7 @@ format the M5StickC Plus2 App Store and "Update SD" read (games + IR code packs)
 import hashlib, os, time
 
 lines = ["V:0", f"T:{int(time.time())}"]
-for root, dirs, files in (w for top in ("apps", "infrared") for w in os.walk(top)):
+for root, dirs, files in (w for top in ("apps", "infrared", "badusb") for w in os.walk(top)):
     dirs.sort()
     lines.append("D:" + root.replace(os.sep, "/"))
     for f in sorted(files):

@@ -1,0 +1,10 @@
+REM Opens Notepad and writes a note (Windows).
+DELAY 500
+GUI r
+DELAY 400
+STRING notepad
+ENTER
+DELAY 1200
+STRING This note was typed by a Bluetooth keyboard.
+ENTER
+STRING - M5StickC Plus2

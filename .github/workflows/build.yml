@@ -3,7 +3,7 @@ name: Build firmware + games for M5StickC Plus2
 on:
   push:
     branches: [main]
-    paths: ["games/**", "firmware/**", "infrared/**", ".github/workflows/**", "tools/**"]
+    paths: ["games/**", "firmware/**", "infrared/**", "badusb/**", ".github/workflows/**", "tools/**"]
   workflow_dispatch:
 
 permissions:
