@@ -2,7 +2,7 @@ Executing action: size
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2e08b0 bytes. Smallest app partition is 0x300000 bytes. 0x1f750 bytes (4%) free.
+furi_esp32.bin binary size 0x2e0940 bytes. Smallest app partition is 0x300000 bytes. 0x1f6c0 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -16,16 +16,16 @@ Executing "ninja size"...
 ┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
 ┃ Memory Type/Section   ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
-│ Flash Code            │      2362114 │    70.67 │         980190 │       3342304 │
-│    .text              │      2362114 │    70.67 │                │               │
+│ Flash Code            │      2362270 │    70.68 │         980034 │       3342304 │
+│    .text              │      2362270 │    70.68 │                │               │
 │ Flash Data            │       511348 │    12.19 │        3682924 │       4194272 │
 │    .rodata            │       511092 │    12.19 │                │               │
 │    .appdesc           │          256 │     0.01 │                │               │
 │ IRAM                  │       117987 │    90.02 │          13085 │        131072 │
 │    .text              │       116959 │    89.23 │                │               │
 │    .vectors           │         1027 │     0.78 │                │               │
-│ DRAM                  │        89116 │    71.53 │          35464 │        124580 │
-│    .bss               │        63944 │    51.33 │                │               │
+│ DRAM                  │        89124 │    71.54 │          35456 │        124580 │
+│    .bss               │        63952 │    51.33 │                │               │
 │    .data              │        25172 │    20.21 │                │               │
 │ SPI DRAM              │        48792 │     1.16 │        4145512 │       4194304 │
 │    .bss               │        48792 │     1.16 │                │               │
@@ -35,12 +35,12 @@ Executing "ninja size"...
 │ RTC SLOW              │           24 │     0.29 │           8168 │          8192 │
 │    .rtc_slow_reserved │           24 │     0.29 │                │               │
 └───────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
-Total image size: 3016747 bytes (.bin may be padded larger)
+Total image size: 3016903 bytes (.bin may be padded larger)
 Executing action: size-components
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2e08b0 bytes. Smallest app partition is 0x300000 bytes. 0x1f750 bytes (4%) free.
+furi_esp32.bin binary size 0x2e0940 bytes. Smallest app partition is 0x300000 bytes. 0x1f6c0 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -55,32 +55,32 @@ Executing "ninja size-components"...
 ┃ Archive File             ┃ Total Size ┃  DRAM ┃  .bss ┃ .data ┃  IRAM ┃ .text ┃ .vectors ┃ Flash Code ┃  .text ┃ Flash Data ┃ .rodata ┃ .appdesc ┃ SPI DRAM ┃  .bss ┃ RTC FAST ┃ .force_fast ┃ .text ┃ RTC SLOW ┃ .rtc_slow_reserved ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
 │ libmain.a                │     608155 │ 49339 │ 47797 │  1542 │  1089 │  1089 │        0 │     490867 │ 490867 │      46636 │   46636 │        0 │    20224 │ 20224 │        0 │           0 │     0 │        0 │                  0 │
-│ libbt.a                  │     299795 │  4717 │     0 │  4717 │  1478 │  1478 │        0 │     263407 │ 263407 │      16822 │   16822 │        0 │    13371 │ 13371 │        0 │           0 │     0 │        0 │                  0 │
+│ libbt.a                  │     299803 │  4717 │     0 │  4717 │  1478 │  1478 │        0 │     263415 │ 263415 │      16822 │   16822 │        0 │    13371 │ 13371 │        0 │           0 │     0 │        0 │                  0 │
 │ libefuse.a               │     275129 │    64 │     4 │    60 │     0 │     0 │        0 │       1162 │   1162 │     273903 │  273903 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libnet80211.a            │     150534 │  1075 │     0 │  1075 │     0 │     0 │        0 │     129952 │ 129952 │      11017 │   11017 │        0 │     8490 │  8490 │        0 │           0 │     0 │        0 │                  0 │
-│ libsubghz.a              │     147780 │    53 │    53 │     0 │     0 │     0 │        0 │     139522 │ 139522 │       8205 │    8205 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libsubghz.a              │     147804 │    53 │    53 │     0 │     0 │     0 │        0 │     139546 │ 139546 │       8205 │    8205 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ liblwip.a                │     110550 │    16 │     0 │    16 │     0 │     0 │        0 │     102723 │ 102723 │       4037 │    4037 │        0 │     3774 │  3774 │        0 │           0 │     0 │        0 │                  0 │
 │ libnfc.a                 │     105112 │     0 │     0 │     0 │     0 │     0 │        0 │     100045 │ 100045 │       5067 │    5067 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmbedcrypto.a          │      96874 │   153 │    81 │    72 │     0 │     0 │        0 │      86506 │  86506 │      10215 │   10215 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libirac.a                │      92650 │    81 │    77 │     4 │     0 │     0 │        0 │      79993 │  79993 │      12576 │   12576 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libc.a                   │      90997 │   860 │   500 │   360 │     0 │     0 │        0 │      84773 │  84773 │       5364 │    5364 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libbtdm_app.a            │      81957 │  3604 │  2666 │   938 │ 22862 │ 22862 │        0 │      54980 │  54980 │        511 │     511 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libbtdm_app.a            │      81953 │  3604 │  2666 │   938 │ 22862 │ 22862 │        0 │      54976 │  54976 │        511 │     511 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libgui.a                 │      76653 │     0 │     0 │     0 │     0 │     0 │        0 │      72373 │  72373 │       4280 │    4280 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libpp.a                  │      66836 │  2623 │     0 │  2623 │  1794 │  1794 │        0 │      57544 │  57544 │       3387 │    3387 │        0 │     1488 │  1488 │        0 │           0 │     0 │        0 │                  0 │
 │ libwpa_supplicant.a      │      64535 │     8 │     0 │     8 │     0 │     0 │        0 │      61586 │  61586 │       1620 │    1620 │        0 │     1321 │  1321 │        0 │           0 │     0 │        0 │                  0 │
 │ libfuri.a                │      47772 │    37 │    29 │     8 │     0 │     0 │        0 │      43423 │  43423 │       4312 │    4312 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmjs.a                 │      45026 │     0 │     0 │     0 │     0 │     0 │        0 │      44324 │  44324 │        702 │     702 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libphy.a                 │      44526 │  1221 │   637 │   584 │  8966 │  8966 │        0 │      34339 │  34339 │          0 │       0 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libfuri_hal.a            │      40163 │  7087 │  6592 │   495 │   248 │   248 │        0 │      32158 │  32158 │        670 │     670 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libfuri_hal.a            │      40293 │  7091 │  6596 │   495 │   248 │   248 │        0 │      32284 │  32284 │        670 │     670 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libassets.a              │      34577 │     0 │     0 │     0 │     0 │     0 │        0 │          0 │      0 │      34577 │   34577 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libtoolbox.a             │      30141 │   312 │     0 │   312 │     0 │     0 │        0 │      27493 │  27493 │       2336 │    2336 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libtoolbox.a             │      30129 │   312 │     0 │   312 │     0 │     0 │        0 │      27481 │  27481 │       2336 │    2336 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmbedtls.a             │      29296 │   266 │   240 │    26 │     0 │     0 │        0 │      27116 │  27116 │       1914 │    1914 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_hw_support.a      │      28830 │   577 │   153 │   424 │ 13151 │ 13151 │        0 │      13552 │  13552 │       1399 │    1399 │        0 │        0 │     0 │      127 │          28 │    99 │       24 │                 24 │
 │ libfreertos.a            │      27487 │  2572 │  1004 │  1568 │  6265 │  6265 │        0 │      16340 │  16340 │       2310 │    2310 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libhal.a                 │      24908 │  4404 │     8 │  4396 │  8694 │  8694 │        0 │      11609 │  11609 │        201 │     201 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libm.a                   │      24592 │     0 │     0 │     0 │     0 │     0 │        0 │      22856 │  22856 │       1736 │    1736 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ liblittlefs.a            │      23726 │  1149 │  1141 │     8 │     0 │     0 │        0 │      22151 │  22151 │        426 │     426 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libflipper_application.a │      23162 │    17 │    17 │     0 │     0 │     0 │        0 │      15828 │  15828 │       7317 │    7317 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libflipper_application.a │      23158 │    17 │    17 │     0 │     0 │     0 │        0 │      15824 │  15824 │       7317 │    7317 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libinfrared.a            │      20188 │    17 │    17 │     0 │     0 │     0 │        0 │      17496 │  17496 │       2675 │    2675 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libarchive.a             │      18558 │     0 │     0 │     0 │     0 │     0 │        0 │      17706 │  17706 │        852 │     852 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libnvs_flash.a           │      15233 │    28 │    28 │     0 │     0 │     0 │        0 │      14953 │  14953 │        252 │     252 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
@@ -100,14 +100,14 @@ Executing "ninja size-components"...
 │ libmbedx509.a            │       8632 │     0 │     0 │     0 │     0 │     0 │        0 │       8587 │   8587 │         45 │      45 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_driver_rmt.a      │       8384 │    89 │    12 │    77 │  1814 │  1814 │        0 │       5990 │   5990 │        491 │     491 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_hid.a             │       8341 │    38 │    38 │     0 │     0 │     0 │        0 │       8171 │   8171 │        132 │     132 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libdriver.a              │       8251 │    58 │    10 │    48 │  1150 │  1150 │        0 │       6640 │   6640 │        403 │     403 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libdriver.a              │       8247 │    58 │    10 │    48 │  1150 │  1150 │        0 │       6636 │   6636 │        403 │     403 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_http_client.a     │       8158 │     0 │     0 │     0 │     0 │     0 │        0 │       7863 │   7863 │        295 │     295 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_netif.a           │       7827 │    37 │    29 │     8 │     0 │     0 │        0 │       7544 │   7544 │        246 │     246 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_psram.a           │       7790 │   119 │   100 │    19 │  4447 │  4447 │        0 │       3107 │   3107 │        117 │     117 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libvfs.a                 │       7412 │   236 │    44 │   192 │     0 │     0 │        0 │       7018 │   7018 │        158 │     158 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_driver_gpio.a     │       6911 │    36 │     0 │    36 │   409 │   409 │        0 │       5915 │   5915 │        551 │     551 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libesp_driver_ledc.a     │       6020 │    92 │    84 │     8 │   100 │   100 │        0 │       5576 │   5576 │        252 │     252 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libesp-tls.a             │       6009 │     4 │     4 │     0 │     0 │     0 │        0 │       5913 │   5913 │         92 │      92 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libesp_driver_ledc.a     │       6028 │    92 │    84 │     8 │   100 │   100 │        0 │       5584 │   5584 │        252 │     252 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libesp-tls.a             │       6013 │     4 │     4 │     0 │     0 │     0 │        0 │       5917 │   5917 │         92 │      92 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_lcd.a             │       5761 │     0 │     0 │     0 │   102 │   102 │        0 │       5118 │   5118 │        541 │     541 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_ringbuf.a         │       5486 │     0 │     0 │     0 │  4881 │  4881 │        0 │          0 │      0 │        605 │     605 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libble_serial.a          │       5195 │    95 │    62 │    33 │     0 │     0 │        0 │       4258 │   4258 │        842 │     842 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
@@ -117,7 +117,7 @@ Executing "ninja size-components"...
 │ libnewlib.a              │       4718 │   376 │   216 │   160 │  2482 │  2482 │        0 │       1749 │   1749 │        111 │     111 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libbtshim.a              │       4646 │     0 │     0 │     0 │     0 │     0 │        0 │       4638 │   4638 │          8 │       8 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_wifi.a            │       4533 │   527 │    47 │   480 │   322 │   322 │        0 │       3609 │   3609 │         75 │      75 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libesp_driver_gptimer.a  │       4129 │    20 │    20 │     0 │   154 │   154 │        0 │       3664 │   3664 │        291 │     291 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libesp_driver_gptimer.a  │       4133 │    20 │    20 │     0 │   154 │   154 │        0 │       3668 │   3668 │        291 │     291 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libflipper_format.a      │       3873 │     0 │     0 │     0 │     0 │     0 │        0 │       3871 │   3871 │          2 │       2 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libtcp_transport.a       │       3846 │     0 │     0 │     0 │     0 │     0 │        0 │       3716 │   3716 │        130 │     130 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_adc.a             │       3842 │    18 │    18 │     0 │     0 │     0 │        0 │       3198 │   3198 │        626 │     626 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
