@@ -12,7 +12,7 @@ index f151ef7..6153d1d 100644
      hid_cfg->ble.bonding = true;
      hid_cfg->ble.pairing = GapPairingPinCodeVerifyYesNo;
 diff --git a/applications/main/bad_usb/helpers/bad_usb_hid.c b/applications/main/bad_usb/helpers/bad_usb_hid.c
-index dbec619..283833b 100644
+index dbec619..41e9829 100644
 --- a/applications/main/bad_usb/helpers/bad_usb_hid.c
 +++ b/applications/main/bad_usb/helpers/bad_usb_hid.c
 @@ -184,11 +184,7 @@ void hid_ble_adjust_config(BadUsbHidConfig* hid_cfg) {
@@ -28,45 +28,53 @@ index dbec619..283833b 100644
      }
  
      if(hid_cfg->ble.pairing >= GapPairingCount) {
-@@ -213,6 +209,13 @@ void* hid_ble_init(BadUsbHidConfig* hid_cfg) {
+@@ -213,9 +209,9 @@ void* hid_ble_init(BadUsbHidConfig* hid_cfg) {
          hid_cfg->ble.bonding,
          hid_cfg->ble.pairing);
      ble_hid->bt = furi_record_open(RECORD_BT);
-+    if(!bt_is_enabled(ble_hid->bt)) {
-+        FURI_LOG_I(TAG, "Enabling Bluetooth for BLE HID");
-+        BtSettings settings;
-+        bt_get_settings(ble_hid->bt, &settings);
-+        settings.enabled = true;
-+        bt_set_settings(ble_hid->bt, &settings);
-+    }
++    bool enable_bt = !bt_is_enabled(ble_hid->bt);
      bt_disconnect(ble_hid->bt);
  
-     furi_delay_ms(200);
-@@ -226,9 +229,7 @@ void* hid_ble_init(BadUsbHidConfig* hid_cfg) {
+-    furi_delay_ms(200);
+     bt_keys_storage_set_storage_path(ble_hid->bt, APP_DATA_PATH(HID_BT_KEYS_STORAGE_NAME));
+     ble_hid->profile = bt_profile_start(ble_hid->bt, ble_profile_hid_ext, &hid_cfg->ble);
+     if(!ble_hid->profile) {
+@@ -226,8 +222,12 @@ void* hid_ble_init(BadUsbHidConfig* hid_cfg) {
      }
      FURI_LOG_I(TAG, "hid_ble_init profile started");
  
 -    if(bt_is_enabled(ble_hid->bt)) {
 -        furi_hal_bt_start_advertising();
--    }
-+    furi_hal_bt_start_advertising();
++    if(enable_bt) {
++        FURI_LOG_I(TAG, "Enabling Bluetooth for BLE HID");
++        BtSettings settings;
++        bt_get_settings(ble_hid->bt, &settings);
++        settings.enabled = true;
++        bt_set_settings(ble_hid->bt, &settings);
+     }
  
      bt_set_status_changed_callback(ble_hid->bt, hid_ble_connection_status_callback, ble_hid);
-     return ble_hid;
 diff --git a/applications/main/bad_usb/helpers/ble_hid_ext_profile.c b/applications/main/bad_usb/helpers/ble_hid_ext_profile.c
-index cf6c4ab..7caeddd 100644
+index cf6c4ab..43887bc 100644
 --- a/applications/main/bad_usb/helpers/ble_hid_ext_profile.c
 +++ b/applications/main/bad_usb/helpers/ble_hid_ext_profile.c
-@@ -22,7 +22,8 @@ static void
+@@ -3,10 +3,14 @@
+ #include <furi.h>
+ #include <string.h>
  
-     ble_profile_hid->get_gap_config(config, NULL);
-     memcpy(config->mac_address, hid_ext_profile_params->mac, sizeof(config->mac_address));
--    strlcpy(config->adv_name, hid_ext_profile_params->name, sizeof(config->adv_name));
-+    // adv_name[0] is the BLE advertising data type, not part of the visible name.
-+    strlcpy(config->adv_name + 1, hid_ext_profile_params->name, sizeof(config->adv_name) - 1);
-     config->bonding_mode = hid_ext_profile_params->bonding;
-     config->pairing_method = hid_ext_profile_params->pairing;
++static void
++    ble_profile_hid_ext_get_config(GapConfig* config, FuriHalBleProfileParams profile_params);
++
+ static FuriHalBleProfileBase* ble_profile_hid_ext_start(FuriHalBleProfileParams profile_params) {
+-    UNUSED(profile_params);
++    GapConfig config;
+ 
+-    return ble_profile_hid->start(NULL);
++    ble_profile_hid_ext_get_config(&config, profile_params);
++    return ble_profile_hid_start_with_config(ble_profile_hid, &config);
  }
+ 
+ static void ble_profile_hid_ext_stop(FuriHalBleProfileBase* profile) {
 diff --git a/applications/main/bad_usb/views/bad_usb_view.c b/applications/main/bad_usb/views/bad_usb_view.c
 index 27e569c..39dfa5d 100644
 --- a/applications/main/bad_usb/views/bad_usb_view.c
@@ -2675,10 +2683,10 @@ HcmV?d00001
 
 diff --git a/applications_user/rps_color/rps_color.c b/applications_user/rps_color/rps_color.c
 new file mode 100644
-index 0000000..9d8ee89
+index 0000000..960d064
 --- /dev/null
 +++ b/applications_user/rps_color/rps_color.c
-@@ -0,0 +1,228 @@
+@@ -0,0 +1,229 @@
 +// Rock Paper Scissors Color: full-screen color game for the M5StickC Plus2.
 +// Original art, drawn in code. B cycles your pick, A plays, Power quits.
 +// Direct panel draw like Sky Hopper Color / Doom (no 128x64 framebuffer).
@@ -2850,6 +2858,7 @@ index 0000000..9d8ee89
 +            text(buf, y0, h, NAMES[g->you], 56 - twidth(NAMES[g->you], 2) / 2, 104, 2, white);
 +            text(buf, y0, h, "B PICK  A GO", W / 2 - twidth("B PICK  A GO", 1), 124, 1, dim);
 +        }
++        esp_lcd_panel_draw_bitmap(panel, 0, y0, W, y0 + h, buf);
 +    }
 +    furi_hal_spi_bus_unlock();
 +}
