@@ -1109,6 +1109,112 @@ index e7d7368..0d1040c 100644
  ADD_SCENE(wlan_app, karma, Karma)
 +ADD_SCENE(wlan_app, app_store, AppStore)
 +ADD_SCENE(wlan_app, wol, Wol)
+diff --git a/applications/main/wlan_app/scenes/scene_evil_portal.c b/applications/main/wlan_app/scenes/scene_evil_portal.c
+index a9178ab..88232d6 100644
+--- a/applications/main/wlan_app/scenes/scene_evil_portal.c
++++ b/applications/main/wlan_app/scenes/scene_evil_portal.c
+@@ -71,63 +71,6 @@ static void ep_action_cb(void* ctx) {
+         app->view_dispatcher, WlanAppCustomEventEvilPortalTogglePause);
+ }
+ 
+-// Baut "<option>SSID</option>"-Liste aus einem Scan (nur passwortgeschützte
+-// APs). Allokiert via malloc, Caller frees. NULL bei leer/Fehler.
+-static char* ep_build_router_options(void) {
+-    if(!wlan_hal_is_started()) {
+-        if(!wlan_hal_start()) return NULL;
+-    }
+-    wifi_ap_record_t* raw = NULL;
+-    uint16_t count = 0;
+-    wlan_hal_scan(&raw, &count, 32);
+-
+-    size_t cap = 1024;
+-    char* buf = malloc(cap);
+-    if(!buf) {
+-        if(raw) free(raw);
+-        return NULL;
+-    }
+-    size_t off = 0;
+-    buf[0] = '\0';
+-
+-    for(uint16_t i = 0; i < count; i++) {
+-        if(raw[i].authmode == WIFI_AUTH_OPEN) continue;
+-        const char* ssid = (const char*)raw[i].ssid;
+-        if(!ssid[0]) continue;
+-
+-        // Crude HTML-Escape für < > & " '
+-        char esc[160];
+-        size_t e = 0;
+-        for(size_t k = 0; ssid[k] && e + 7 < sizeof(esc); k++) {
+-            char c = ssid[k];
+-            if(c == '<') { memcpy(esc + e, "&lt;", 4); e += 4; }
+-            else if(c == '>') { memcpy(esc + e, "&gt;", 4); e += 4; }
+-            else if(c == '&') { memcpy(esc + e, "&amp;", 5); e += 5; }
+-            else if(c == '"') { memcpy(esc + e, "&quot;", 6); e += 6; }
+-            else if(c == '\'') { memcpy(esc + e, "&#39;", 5); e += 5; }
+-            else { esc[e++] = c; }
+-        }
+-        esc[e] = '\0';
+-
+-        size_t need = off + e * 2 + 32;
+-        if(need >= cap) {
+-            cap = need * 2;
+-            char* nb = realloc(buf, cap);
+-            if(!nb) { free(buf); if(raw) free(raw); return NULL; }
+-            buf = nb;
+-        }
+-        int n = snprintf(buf + off, cap - off,
+-            "<option value=\"%s\">%s</option>", esc, esc);
+-        if(n > 0) off += (size_t)n;
+-    }
+-    if(raw) free(raw);
+-    if(off == 0) {
+-        free(buf);
+-        return NULL;
+-    }
+-    return buf;
+-}
+-
+ static void ep_sanitize_filename(const char* in, char* out, size_t out_size) {
+     size_t j = 0;
+     for(size_t i = 0; in[i] && j < out_size - 1; i++) {
+@@ -284,29 +227,21 @@ void wlan_app_scene_evil_portal_on_enter(void* context) {
+         html_len = EVIL_PORTAL_HTML_GOOGLE_LEN;
+     }
+ 
+-    // Der WLAN-Worker muss existieren, sonst scheitert der Dispatch in
+-    // wlan_hal_evil_portal_start ("worker dispatch failed"). Bei Router-
+-    // Templates erledigt das ep_build_router_options() implizit; für
+-    // Google-/Login-Templates hier explizit sicherstellen — nur den Worker,
+-    // KEIN voller wlan_hal_start() (dessen WiFi-STA-Init/Deinit fragmentiert
+-    // den internen Heap direkt vor der knappen Evil-Portal-WiFi-Init).
++    // Ensure only the worker exists before portal startup. Starting/scanning in
++    // STA mode first fragments the internal heap needed by WiFi AP + HTTP.
+     wlan_hal_ensure_worker();
+ 
+-    if(router_template) {
+-        wlan_evil_portal_view_set_busy(
+-            app->evil_portal_view_obj, true, "Scanning APs...");
+-        if(s_router_options) {
+-            free(s_router_options);
+-            s_router_options = NULL;
+-        }
+-        s_router_options = ep_build_router_options();
+-        wlan_evil_portal_view_set_busy(app->evil_portal_view_obj, false, NULL);
++    // Router is a local AP-only portal test. Avoid the STA scan/APSTA restart,
++    // which fragments the constrained ESP32 heap before the HTTP server starts.
++    if(s_router_options) {
++        free(s_router_options);
++        s_router_options = NULL;
+     }
+ 
+     WlanHalEvilPortalConfig cfg = {
+         .ssid = app->evil_portal_ssid,
+         .channel = channel,
+-        .verify_creds = router_template,
++        .verify_creds = false,
+         .karma = app->evil_portal_karma,
+         .html = html,
+         .html_len = html_len,
 diff --git a/applications/main/wlan_app/scenes/scene_main.c b/applications/main/wlan_app/scenes/scene_main.c
 index fd14bec..fcae95e 100644
 --- a/applications/main/wlan_app/scenes/scene_main.c
@@ -1331,10 +1437,43 @@ index 349fbad..06ba0d7 100644
      View* view_sd_update;
  
 diff --git a/applications/main/wlan_app/wlan_evil_portal.c b/applications/main/wlan_app/wlan_evil_portal.c
-index a8c1f00..29a5a85 100644
+index a8c1f00..f0cc715 100644
 --- a/applications/main/wlan_app/wlan_evil_portal.c
 +++ b/applications/main/wlan_app/wlan_evil_portal.c
-@@ -550,11 +550,9 @@ static bool start_http(void) {
+@@ -356,7 +356,7 @@ static void send_portal_html(httpd_req_t* req, const char* error) {
+ static const char EVIL_PORTAL_HTML_ROUTER_SUCCESS[] =
+     "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+-    "<title>Update Complete</title>"
++    "<title>Portal Test Complete</title>"
+     "<style>"
+     "body{font-family:Helvetica,Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;color:#333}"
+     ".card{max-width:420px;margin:40px auto;background:#fff;border:1px solid #ddd;border-radius:6px;padding:24px;box-shadow:0 2px 4px rgba(0,0,0,.05);text-align:center}"
+@@ -364,8 +364,8 @@ static const char EVIL_PORTAL_HTML_ROUTER_SUCCESS[] =
+     "p{font-size:14px;line-height:1.5;margin:0 0 16px}"
+     "</style></head><body>"
+     "<div class=\"card\">"
+-    "<h1>&#10004; Update Complete</h1>"
+-    "<p>Your router will reconnect to the network shortly. You can close this page.</p>"
++    "<h1>&#10004; Portal Test Complete</h1>"
++    "<p>The captive-portal website and local form submission are working.</p>"
+     "</div></body></html>";
+ 
+ static esp_err_t handler_post(httpd_req_t* req) {
+@@ -403,6 +403,12 @@ static esp_err_t handler_post(httpd_req_t* req) {
+     httpd_resp_set_type(req, "text/html");
+     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+ 
++    if(strcmp(step, "demo") == 0) {
++        httpd_resp_send(
++            req, EVIL_PORTAL_HTML_ROUTER_SUCCESS, sizeof(EVIL_PORTAL_HTML_ROUTER_SUCCESS) - 1);
++        return ESP_OK;
++    }
++
+     // Google 3-step flow: step=1 carries only email -> render step 2 with the
+     // entered email substituted in, no credentials captured yet.
+     if(strcmp(step, "1") == 0 && user[0] && !pwd[0]) {
+@@ -550,11 +556,9 @@ static bool start_http(void) {
      httpd_config_t config = HTTPD_DEFAULT_CONFIG();
      config.server_port = 80;
      config.max_uri_handlers = 24;
@@ -1349,7 +1488,7 @@ index a8c1f00..29a5a85 100644
      config.uri_match_fn = httpd_uri_match_wildcard;
      config.lru_purge_enable = true;
      // Aggressive recv timeout so a stuck client doesn't squat a socket forever.
-@@ -1194,7 +1192,7 @@ static void evil_portal_start_worker(void* arg) {
+@@ -1194,7 +1198,7 @@ static void evil_portal_start_worker(void* arg) {
      ESP_LOGI(TAG, "[worker] starting DNS task");
      s_dns_run = true;
      // Task-Stack ins PSRAM legen (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y):
@@ -1358,6 +1497,48 @@ index a8c1f00..29a5a85 100644
      // 6 KB Stack. Erfordert vTaskDeleteWithCaps() beim Self-Delete (siehe dns_task).
      if(xTaskCreateWithCaps(
             dns_task, "EpDns", DNS_TASK_STACK, NULL, 4, &s_dns_task, MALLOC_CAP_SPIRAM) !=
+diff --git a/applications/main/wlan_app/wlan_evil_portal_html.c b/applications/main/wlan_app/wlan_evil_portal_html.c
+index 6527da8..fa8b356 100644
+--- a/applications/main/wlan_app/wlan_evil_portal_html.c
++++ b/applications/main/wlan_app/wlan_evil_portal_html.c
+@@ -112,7 +112,7 @@ const char EVIL_PORTAL_HTML_GOOGLE_FAILED[] =
+ const char EVIL_PORTAL_HTML_ROUTER[] =
+     "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+-    "<title>Router - Firmware Update Required</title>"
++    "<title>Router Portal Test</title>"
+     "<style>"
+     "body{font-family:Helvetica,Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;color:#333}"
+     ".card{max-width:420px;margin:40px auto;background:#fff;border:1px solid #ddd;border-radius:6px;padding:24px;box-shadow:0 2px 4px rgba(0,0,0,.05)}"
+@@ -131,22 +131,16 @@ const char EVIL_PORTAL_HTML_ROUTER[] =
+     "@keyframes spin{to{transform:rotate(360deg)}}"
+     "</style></head><body>"
+     "<div class=\"card\">"
+-    "<h1>&#9888; Critical Firmware Update Required</h1>"
+-    "<p>Your router has detected a security vulnerability. Please re-authenticate with your network credentials to apply the patch.</p>"
++    "<h1>Router Portal Test</h1>"
++    "<p>This local test confirms that captive-portal pages and form submissions are working.</p>"
+     "<div class=\"err\">%ERROR%</div>"
+     "<form action=\"/post\" method=\"POST\" onsubmit=\"document.getElementById('lo').classList.add('show')\">"
+-    "<label>Network Name (SSID)</label>"
+-    "<select name=\"username\" required>"
+-    "<option value=\"\" disabled selected>Select your network&hellip;</option>"
+-    "%SSID_OPTIONS%"
+-    "</select>"
+-    "<label>Network Password</label>"
+-    "<input type=\"password\" name=\"password\" required>"
+-    "<button type=\"submit\">Apply Update</button>"
++    "<input type=\"hidden\" name=\"step\" value=\"demo\">"
++    "<button type=\"submit\">Run Portal Test</button>"
+     "</form>"
+-    "<div class=\"note\">This is a one-time security verification.</div>"
++    "<div class=\"note\">No passwords or personal information are requested.</div>"
+     "</div>"
+-    "<div id=\"lo\"><div class=\"sp\"></div><p>Verifying credentials&hellip;</p></div>"
++    "<div id=\"lo\"><div class=\"sp\"></div><p>Testing portal&hellip;</p></div>"
+     "</body></html>";
+ 
+ const size_t EVIL_PORTAL_HTML_GOOGLE_STEP1_LEN = sizeof(EVIL_PORTAL_HTML_GOOGLE_STEP1) - 1;
 diff --git a/applications/main/wlan_app/wlan_hal.c b/applications/main/wlan_app/wlan_hal.c
 index 1f78604..5b61ff6 100644
 --- a/applications/main/wlan_app/wlan_hal.c
