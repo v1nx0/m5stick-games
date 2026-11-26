@@ -1568,10 +1568,10 @@ index 1f78604..5b61ff6 100644
  }
  
 diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
-index 8a5d7bd..fd1eec8 100644
+index 8a5d7bd..92ee1ca 100644
 --- a/applications/main/wlan_app/wlan_sd_update.c
 +++ b/applications/main/wlan_app/wlan_sd_update.c
-@@ -25,6 +25,11 @@
+@@ -25,11 +25,16 @@
  // raw.githubusercontent.com has no rate limit, no User-Agent requirement, and
  // no JSON dependency.
  #define SD_UPDATE_MANIFEST_URL SD_UPDATE_RAW_BASE "/Manifest"
@@ -1583,6 +1583,12 @@ index 8a5d7bd..fd1eec8 100644
  
  #define SD_UPDATE_LOCAL_VERSION "/ext/version.txt"
  #define SD_UPDATE_DEST_ROOT "/ext"
+ #define SD_UPDATE_MAX_TREE_JSON (4u * 1024u * 1024u)
+-#define SD_UPDATE_CHUNK 8192
++#define SD_UPDATE_CHUNK 2048
+ 
+ static void* sd_malloc(size_t n) {
+     void* p = heap_caps_malloc(n, MALLOC_CAP_SPIRAM);
 @@ -47,6 +52,11 @@ struct WlanSdUpdate {
      volatile uint32_t total_files;
      char current_file[64];
@@ -1595,15 +1601,6 @@ index 8a5d7bd..fd1eec8 100644
  };
  
  static void sd_update_set_file(WlanSdUpdate* u, const char* name) {
-@@ -243,7 +253,7 @@ static bool sd_update_download_file(
-         f = storage_file_alloc(storage);
-         if(!storage_file_open(f, dest, FSAM_WRITE, FSOM_CREATE_ALWAYS)) break;
- 
--        chunk = malloc(SD_UPDATE_CHUNK);
-+        chunk = sd_malloc(SD_UPDATE_CHUNK);
-         if(!chunk) break;
- 
-         ok = true;
 @@ -278,6 +288,18 @@ static bool sd_update_download_file(
      return ok;
  }
