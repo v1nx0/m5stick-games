@@ -1568,7 +1568,7 @@ index 1f78604..5b61ff6 100644
  }
  
 diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
-index 8a5d7bd..b51f1cb 100644
+index 8a5d7bd..fd1eec8 100644
 --- a/applications/main/wlan_app/wlan_sd_update.c
 +++ b/applications/main/wlan_app/wlan_sd_update.c
 @@ -25,6 +25,11 @@
@@ -1595,7 +1595,35 @@ index 8a5d7bd..b51f1cb 100644
  };
  
  static void sd_update_set_file(WlanSdUpdate* u, const char* name) {
-@@ -287,6 +297,26 @@ static bool sd_update_safe_dest(const char* rel, char* out, size_t out_sz) {
+@@ -243,7 +253,7 @@ static bool sd_update_download_file(
+         f = storage_file_alloc(storage);
+         if(!storage_file_open(f, dest, FSAM_WRITE, FSOM_CREATE_ALWAYS)) break;
+ 
+-        chunk = malloc(SD_UPDATE_CHUNK);
++        chunk = sd_malloc(SD_UPDATE_CHUNK);
+         if(!chunk) break;
+ 
+         ok = true;
+@@ -278,6 +288,18 @@ static bool sd_update_download_file(
+     return ok;
+ }
+ 
++static bool sd_update_download_file_retry(
++    WlanSdUpdate* u,
++    esp_http_client_handle_t client,
++    Storage* storage,
++    const char* url,
++    const char* dest) {
++    if(sd_update_download_file(u, client, storage, url, dest)) return true;
++    if(u->cancel) return false;
++    FURI_LOG_W(SD_UPDATE_TAG, "retry %s", url);
++    return sd_update_download_file(u, client, storage, url, dest);
++}
++
+ // Path-traversal protection; builds /ext/<rel>.
+ static bool sd_update_safe_dest(const char* rel, char* out, size_t out_sz) {
+     while(*rel == '/') rel++;
+@@ -287,6 +309,26 @@ static bool sd_update_safe_dest(const char* rel, char* out, size_t out_sz) {
      return n > 0 && (size_t)n < out_sz;
  }
  
@@ -1622,7 +1650,7 @@ index 8a5d7bd..b51f1cb 100644
  // Files to skip (repo housekeeping, not SD card resources). Manifest IS
  // downloaded to /ext so the device knows which database version is installed.
  static bool sd_update_should_skip(const char* path) {
-@@ -352,11 +382,15 @@ static SdTreeEntry* sd_update_parse_manifest(char* manifest, uint32_t* out_count
+@@ -352,11 +394,15 @@ static SdTreeEntry* sd_update_parse_manifest(char* manifest, uint32_t* out_count
  }
  
  // Main sync: fetch the tree, compare with local files, download what's needed.
@@ -1640,7 +1668,7 @@ index 8a5d7bd..b51f1cb 100644
      if(!manifest) {
          if(!u->cancel) sd_update_fail(u, "Manifest fetch failed");
          return false;
-@@ -379,7 +413,7 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+@@ -379,7 +425,7 @@ static bool sd_update_sync(WlanSdUpdate* u) {
  
      // Create a single HTTP client for all downloads (TLS session reuse).
      esp_http_client_config_t cfg;
@@ -1649,7 +1677,7 @@ index 8a5d7bd..b51f1cb 100644
      esp_http_client_handle_t client = esp_http_client_init(&cfg);
      bool ok = (client != NULL);
  
-@@ -395,6 +429,7 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+@@ -395,6 +441,7 @@ static bool sd_update_sync(WlanSdUpdate* u) {
          u->done_files = i + 1;
          u->percent = (uint8_t)((uint64_t)(i + 1) * 100u / count);
  
@@ -1657,7 +1685,7 @@ index 8a5d7bd..b51f1cb 100644
          char dest[256];
          if(!sd_update_safe_dest(rel, dest, sizeof(dest))) continue;
  
-@@ -409,9 +444,25 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+@@ -409,9 +456,25 @@ static bool sd_update_sync(WlanSdUpdate* u) {
          u->speed_kbps = 0;
  
          char url[400];
@@ -1674,7 +1702,7 @@ index 8a5d7bd..b51f1cb 100644
 +        char tmp[264];
 +        snprintf(tmp, sizeof(tmp), "%s.tmp", dest);
 +        const char* target = prefix ? tmp : dest;
-+        bool got = sd_update_download_file(u, client, storage, url, target);
++        bool got = sd_update_download_file_retry(u, client, storage, url, target);
 +        if(got && prefix) {
 +            storage_common_remove(storage, dest);
 +            got = storage_common_rename(storage, tmp, dest) == FSE_OK;
@@ -1685,7 +1713,7 @@ index 8a5d7bd..b51f1cb 100644
              if(u->cancel) {
                  ok = false;
                  break;
-@@ -428,8 +479,8 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+@@ -428,8 +491,8 @@ static bool sd_update_sync(WlanSdUpdate* u) {
      free(entries);
      free(manifest);
  
@@ -1696,7 +1724,7 @@ index 8a5d7bd..b51f1cb 100644
          char ver[64];
          if(sd_update_http_get_text(SD_UPDATE_VERSION_URL, ver, sizeof(ver))) {
              File* vf = storage_file_alloc(storage);
-@@ -449,10 +500,14 @@ static bool sd_update_sync(WlanSdUpdate* u) {
+@@ -449,10 +512,14 @@ static bool sd_update_sync(WlanSdUpdate* u) {
  // Worker Task
  // ---------------------------------------------------------------------------
  
@@ -1713,7 +1741,7 @@ index 8a5d7bd..b51f1cb 100644
  }
  
  static void sd_update_task(void* arg) {
-@@ -461,11 +516,70 @@ static void sd_update_task(void* arg) {
+@@ -461,11 +528,70 @@ static void sd_update_task(void* arg) {
      u->phase = WlanSdUpdateChecking;
      u->percent = 0;
  
@@ -1748,9 +1776,9 @@ index 8a5d7bd..b51f1cb 100644
 +        } else {
 +            u->phase = WlanSdUpdateIdle;
 +        }
-+        sd_update_finish(u);
-+        return;
-+    }
+         sd_update_finish(u);
+         return;
+     }
 +    if(u->mode == 2) {
 +        u->phase = WlanSdUpdateDownloading;
 +        char dest[256], url[400];
@@ -1763,7 +1791,7 @@ index 8a5d7bd..b51f1cb 100644
 +            Storage* storage = furi_record_open(RECORD_STORAGE);
 +            if(client) {
 +                sd_update_mkdirs(storage, dest);
-+                ok = sd_update_download_file(u, client, storage, url, dest);
++                ok = sd_update_download_file_retry(u, client, storage, url, dest);
 +                esp_http_client_cleanup(client);
 +            }
 +            // never leave a half-written FAP the loader would try to run
@@ -1778,15 +1806,15 @@ index 8a5d7bd..b51f1cb 100644
 +        } else {
 +            u->phase = WlanSdUpdateIdle;
 +        }
-         sd_update_finish(u);
-         return;
-     }
++        sd_update_finish(u);
++        return;
++    }
 +
 +    bool up_to_date = !u->cancel && sd_update_is_up_to_date();
      if(u->cancel) {
          u->phase = WlanSdUpdateIdle;
          sd_update_finish(u);
-@@ -475,9 +589,17 @@ static void sd_update_task(void* arg) {
+@@ -475,9 +601,17 @@ static void sd_update_task(void* arg) {
      u->phase = WlanSdUpdateDownloading;
      u->percent = 0;
  
@@ -1806,7 +1834,7 @@ index 8a5d7bd..b51f1cb 100644
          u->percent = 100;
          u->phase = WlanSdUpdateDone;
      } else if(u->cancel && u->phase != WlanSdUpdateError) {
-@@ -487,6 +609,14 @@ static void sd_update_task(void* arg) {
+@@ -487,6 +621,14 @@ static void sd_update_task(void* arg) {
      sd_update_finish(u);
  }
  
@@ -1821,7 +1849,7 @@ index 8a5d7bd..b51f1cb 100644
  // ---------------------------------------------------------------------------
  // Public API
  // ---------------------------------------------------------------------------
-@@ -502,6 +632,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -502,6 +644,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
      u->done_files = 0;
      u->total_files = 0;
      u->err[0] = '\0';
@@ -1831,7 +1859,7 @@ index 8a5d7bd..b51f1cb 100644
      sd_update_set_file(u, "version.txt");
      return u;
  }
-@@ -509,10 +642,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -509,10 +654,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
  void wlan_sd_update_free(WlanSdUpdate* u) {
      if(!u) return;
      wlan_sd_update_cancel(u);
@@ -1895,7 +1923,7 @@ index 8a5d7bd..b51f1cb 100644
      if(u->running) return;
      u->cancel = false;
      u->percent = 0;
-@@ -524,17 +710,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
+@@ -524,17 +722,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
      u->phase = WlanSdUpdateChecking;
      u->running = true;
      static StaticTask_t sd_upd_tcb;
