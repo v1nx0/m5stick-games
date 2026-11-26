@@ -1,6 +1,6 @@
 {
   "name": "Flipper Zero ESP32 port - M5StickC Plus2 (App Store + games + AC On)",
-  "version": "e1efe3b",
+  "version": "a078da7",
   "new_install_prompt_erase": false,
   "builds": [
     {

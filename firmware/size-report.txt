@@ -2,7 +2,7 @@ Executing action: size
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2e08b0 bytes. Smallest app partition is 0x300000 bytes. 0x1f750 bytes (4%) free.
+furi_esp32.bin binary size 0x2e08c0 bytes. Smallest app partition is 0x300000 bytes. 0x1f740 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -16,8 +16,8 @@ Executing "ninja size"...
 ┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
 ┃ Memory Type/Section   ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
-│ Flash Code            │      2362310 │    70.68 │         979994 │       3342304 │
-│    .text              │      2362310 │    70.68 │                │               │
+│ Flash Code            │      2362334 │    70.68 │         979970 │       3342304 │
+│    .text              │      2362334 │    70.68 │                │               │
 │ Flash Data            │       511156 │    12.19 │        3683116 │       4194272 │
 │    .rodata            │       510900 │    12.18 │                │               │
 │    .appdesc           │          256 │     0.01 │                │               │
@@ -35,12 +35,12 @@ Executing "ninja size"...
 │ RTC SLOW              │           24 │     0.29 │           8168 │          8192 │
 │    .rtc_slow_reserved │           24 │     0.29 │                │               │
 └───────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
-Total image size: 3016751 bytes (.bin may be padded larger)
+Total image size: 3016775 bytes (.bin may be padded larger)
 Executing action: size-components
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2e08b0 bytes. Smallest app partition is 0x300000 bytes. 0x1f750 bytes (4%) free.
+furi_esp32.bin binary size 0x2e08c0 bytes. Smallest app partition is 0x300000 bytes. 0x1f740 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -54,24 +54,24 @@ Executing "ninja size-components"...
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
 ┃ Archive File             ┃ Total Size ┃  DRAM ┃  .bss ┃ .data ┃  IRAM ┃ .text ┃ .vectors ┃ Flash Code ┃  .text ┃ Flash Data ┃ .rodata ┃ .appdesc ┃ SPI DRAM ┃  .bss ┃ RTC FAST ┃ .force_fast ┃ .text ┃ RTC SLOW ┃ .rtc_slow_reserved ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-│ libmain.a                │     607930 │ 49343 │ 47801 │  1542 │  1089 │  1089 │        0 │     490903 │ 490903 │      46371 │   46371 │        0 │    20224 │ 20224 │        0 │           0 │     0 │        0 │                  0 │
+│ libmain.a                │     607946 │ 49343 │ 47801 │  1542 │  1089 │  1089 │        0 │     490919 │ 490919 │      46371 │   46371 │        0 │    20224 │ 20224 │        0 │           0 │     0 │        0 │                  0 │
 │ libbt.a                  │     299803 │  4717 │     0 │  4717 │  1478 │  1478 │        0 │     263415 │ 263415 │      16822 │   16822 │        0 │    13371 │ 13371 │        0 │           0 │     0 │        0 │                  0 │
-│ libefuse.a               │     275205 │    64 │     4 │    60 │     0 │     0 │        0 │       1162 │   1162 │     273979 │  273979 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libefuse.a               │     275217 │    64 │     4 │    60 │     0 │     0 │        0 │       1162 │   1162 │     273991 │  273991 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libnet80211.a            │     150534 │  1075 │     0 │  1075 │     0 │     0 │        0 │     129952 │ 129952 │      11017 │   11017 │        0 │     8490 │  8490 │        0 │           0 │     0 │        0 │                  0 │
-│ libsubghz.a              │     147804 │    53 │    53 │     0 │     0 │     0 │        0 │     139546 │ 139546 │       8205 │    8205 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ liblwip.a                │     110550 │    16 │     0 │    16 │     0 │     0 │        0 │     102723 │ 102723 │       4037 │    4037 │        0 │     3774 │  3774 │        0 │           0 │     0 │        0 │                  0 │
+│ libsubghz.a              │     147796 │    53 │    53 │     0 │     0 │     0 │        0 │     139538 │ 139538 │       8205 │    8205 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ liblwip.a                │     110566 │    16 │     0 │    16 │     0 │     0 │        0 │     102739 │ 102739 │       4037 │    4037 │        0 │     3774 │  3774 │        0 │           0 │     0 │        0 │                  0 │
 │ libnfc.a                 │     105112 │     0 │     0 │     0 │     0 │     0 │        0 │     100045 │ 100045 │       5067 │    5067 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmbedcrypto.a          │      96874 │   153 │    81 │    72 │     0 │     0 │        0 │      86506 │  86506 │      10215 │   10215 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libirac.a                │      92650 │    81 │    77 │     4 │     0 │     0 │        0 │      79993 │  79993 │      12576 │   12576 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libc.a                   │      90997 │   860 │   500 │   360 │     0 │     0 │        0 │      84773 │  84773 │       5364 │    5364 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libbtdm_app.a            │      81953 │  3604 │  2666 │   938 │ 22862 │ 22862 │        0 │      54976 │  54976 │        511 │     511 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libgui.a                 │      76653 │     0 │     0 │     0 │     0 │     0 │        0 │      72373 │  72373 │       4280 │    4280 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libgui.a                 │      76649 │     0 │     0 │     0 │     0 │     0 │        0 │      72369 │  72369 │       4280 │    4280 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libpp.a                  │      66836 │  2623 │     0 │  2623 │  1794 │  1794 │        0 │      57544 │  57544 │       3387 │    3387 │        0 │     1488 │  1488 │        0 │           0 │     0 │        0 │                  0 │
 │ libwpa_supplicant.a      │      64535 │     8 │     0 │     8 │     0 │     0 │        0 │      61586 │  61586 │       1620 │    1620 │        0 │     1321 │  1321 │        0 │           0 │     0 │        0 │                  0 │
 │ libfuri.a                │      47772 │    37 │    29 │     8 │     0 │     0 │        0 │      43423 │  43423 │       4312 │    4312 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmjs.a                 │      45026 │     0 │     0 │     0 │     0 │     0 │        0 │      44324 │  44324 │        702 │     702 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libphy.a                 │      44526 │  1221 │   637 │   584 │  8966 │  8966 │        0 │      34339 │  34339 │          0 │       0 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libfuri_hal.a            │      40293 │  7091 │  6596 │   495 │   248 │   248 │        0 │      32284 │  32284 │        670 │     670 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libfuri_hal.a            │      40289 │  7091 │  6596 │   495 │   248 │   248 │        0 │      32280 │  32280 │        670 │     670 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libassets.a              │      34577 │     0 │     0 │     0 │     0 │     0 │        0 │          0 │      0 │      34577 │   34577 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libtoolbox.a             │      30129 │   312 │     0 │   312 │     0 │     0 │        0 │      27481 │  27481 │       2336 │    2336 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libmbedtls.a             │      29296 │   266 │   240 │    26 │     0 │     0 │        0 │      27116 │  27116 │       1914 │    1914 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
@@ -80,9 +80,9 @@ Executing "ninja size-components"...
 │ libhal.a                 │      24908 │  4404 │     8 │  4396 │  8694 │  8694 │        0 │      11609 │  11609 │        201 │     201 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libm.a                   │      24592 │     0 │     0 │     0 │     0 │     0 │        0 │      22856 │  22856 │       1736 │    1736 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ liblittlefs.a            │      23726 │  1149 │  1141 │     8 │     0 │     0 │        0 │      22151 │  22151 │        426 │     426 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libflipper_application.a │      23158 │    17 │    17 │     0 │     0 │     0 │        0 │      15824 │  15824 │       7317 │    7317 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libinfrared.a            │      20188 │    17 │    17 │     0 │     0 │     0 │        0 │      17496 │  17496 │       2675 │    2675 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
-│ libarchive.a             │      18558 │     0 │     0 │     0 │     0 │     0 │        0 │      17706 │  17706 │        852 │     852 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libflipper_application.a │      23178 │    17 │    17 │     0 │     0 │     0 │        0 │      15844 │  15844 │       7317 │    7317 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libinfrared.a            │      20172 │    17 │    17 │     0 │     0 │     0 │        0 │      17480 │  17480 │       2675 │    2675 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libarchive.a             │      18562 │     0 │     0 │     0 │     0 │     0 │        0 │      17710 │  17710 │        852 │     852 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libnvs_flash.a           │      15233 │    28 │    28 │     0 │     0 │     0 │        0 │      14953 │  14953 │        252 │     252 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libhttp_parser.a         │      14846 │     0 │     0 │     0 │     0 │     0 │        0 │      14094 │  14094 │        752 │     752 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libesp_driver_uart.a     │      13288 │   241 │    33 │   208 │     0 │     0 │        0 │      12322 │  12322 │        725 │     725 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
