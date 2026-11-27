@@ -144,7 +144,7 @@ index caed2d6..ba7413b 100644
 +void infrared_scan_speed_cycle(void);
 diff --git a/applications/main/infrared/infrared_scan.c b/applications/main/infrared/infrared_scan.c
 new file mode 100644
-index 0000000..9339124
+index 0000000..7a5b2ec
 --- /dev/null
 +++ b/applications/main/infrared/infrared_scan.c
 @@ -0,0 +1,47 @@
@@ -155,7 +155,7 @@ index 0000000..9339124
 +#define SCAN_SPEED_FILE EXT_PATH("infrared/.scan_speed")
 +
 +static const char* const SCAN_NAMES[] = {"Default", "Medium", "Fast"};
-+static const uint32_t SCAN_STEP_MS[] = {2500, 1500, 800};
++static const uint32_t SCAN_STEP_MS[] = {800, 400, 200};
 +static uint8_t scan_speed = 0;
 +static bool scan_loaded = false;
 +
