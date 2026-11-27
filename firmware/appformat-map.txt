@@ -64,9 +64,9 @@
 100056-                                  0x4 (size before relaxing)
 --
 106261- .text.esp_app_format_init_elf_sha256
-106262:                0x400d4f8c       0x5c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+106262:                0x400d4f90       0x5c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
 106263- .text.__esp_system_init_fn_init_show_app_info
-106264:                0x400d4fe8        0xa esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+106264:                0x400d4fec        0xa esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
 106265-                                  0xd (size before relaxing)
 --
 234681- .debug_aranges
