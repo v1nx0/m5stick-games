@@ -1585,7 +1585,7 @@ index 1f78604..5b61ff6 100644
  }
  
 diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
-index 8a5d7bd..92ee1ca 100644
+index 8a5d7bd..ef1365e 100644
 --- a/applications/main/wlan_app/wlan_sd_update.c
 +++ b/applications/main/wlan_app/wlan_sd_update.c
 @@ -25,11 +25,16 @@
@@ -1937,7 +1937,7 @@ index 8a5d7bd..92ee1ca 100644
      if(u->running) return;
      u->cancel = false;
      u->percent = 0;
-@@ -524,17 +722,25 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
+@@ -524,23 +722,33 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
      u->phase = WlanSdUpdateChecking;
      u->running = true;
      static StaticTask_t sd_upd_tcb;
@@ -1967,6 +1967,15 @@ index 8a5d7bd..92ee1ca 100644
  }
  
  void wlan_sd_update_cancel(WlanSdUpdate* u) {
+     if(!u->running) return;
+     u->cancel = true;
+-    for(int i = 0; i < 200 && u->running; ++i) {
++    // The HTTP timeout is longer than ten seconds. Do not let the owner free
++    // this state while the worker can still be blocked inside the client.
++    while(u->running) {
+         vTaskDelay(pdMS_TO_TICKS(50));
+     }
+ }
 diff --git a/applications/main/wlan_app/wlan_sd_update.h b/applications/main/wlan_app/wlan_sd_update.h
 index d94c9e2..489100b 100644
 --- a/applications/main/wlan_app/wlan_sd_update.h
@@ -1992,6 +2001,19 @@ index d94c9e2..489100b 100644
 +bool wlan_sd_update_catalog_get(
 +    const WlanSdUpdate* u, uint32_t idx, char* rel, size_t rel_sz, uint32_t* size, uint8_t* src);
 +void wlan_sd_update_start_mode(WlanSdUpdate* u);
+diff --git a/applications/services/gui/modules/button_panel.c b/applications/services/gui/modules/button_panel.c
+index 8237d0b..ed0627a 100644
+--- a/applications/services/gui/modules/button_panel.c
++++ b/applications/services/gui/modules/button_panel.c
+@@ -116,7 +116,7 @@ void button_panel_reserve(ButtonPanel* button_panel, size_t reserve_x, size_t re
+             model->reserve_x = reserve_x;
+             model->reserve_y = reserve_y;
+             ButtonMatrix_reserve(model->button_matrix, model->reserve_y);
+-            for(size_t i = 0; i > model->reserve_y; ++i) {
++            for(size_t i = 0; i < model->reserve_y; ++i) {
+                 ButtonArray_t* array = ButtonMatrix_get(model->button_matrix, i);
+                 ButtonArray_init(*array);
+                 ButtonArray_reserve(*array, reserve_x);
 diff --git a/applications/services/gui/modules/variable_item_list.c b/applications/services/gui/modules/variable_item_list.c
 index a02e52f..c33c886 100644
 --- a/applications/services/gui/modules/variable_item_list.c
@@ -2725,10 +2747,10 @@ HcmV?d00001
 
 diff --git a/applications_user/rps_color/rps_color.c b/applications_user/rps_color/rps_color.c
 new file mode 100644
-index 0000000..960d064
+index 0000000..52ce2bb
 --- /dev/null
 +++ b/applications_user/rps_color/rps_color.c
-@@ -0,0 +1,229 @@
+@@ -0,0 +1,233 @@
 +// Rock Paper Scissors Color: full-screen color game for the M5StickC Plus2.
 +// Original art, drawn in code. B cycles your pick, A plays, Power quits.
 +// Direct panel draw like Sky Hopper Color / Doom (no 128x64 framebuffer).
@@ -2918,6 +2940,10 @@ index 0000000..960d064
 +    if(!buf) return 0;
 +
 +    Game* g = malloc(sizeof(Game));
++    if(!g) {
++        heap_caps_free(buf);
++        return 0;
++    }
 +    memset(g, 0, sizeof(Game));
 +    srand(furi_get_tick());
 +

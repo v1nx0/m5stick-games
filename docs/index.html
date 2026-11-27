@@ -15,6 +15,8 @@
     border-radius: 8px; padding: 12px 20px; font-size: 1rem; font-weight: 600; cursor: pointer; }
   ul { padding-left: 1.2rem; }
   .warn { font-size: .9rem; opacity: .8; }
+  details { margin-top: 14px; }
+  details p { margin-bottom: 0; }
   code { background: #8882; padding: 1px 5px; border-radius: 4px; }
 </style>
 </head>
@@ -30,6 +32,12 @@
   </esp-web-install-button>
   <p class="warn">Plug the stick in, press the button, pick the serial port. Only the firmware is
     replaced - your apps, IR packs and saved files stay.</p>
+  <details>
+    <summary><b>"Failed to open serial port"?</b></summary>
+    <p class="warn">Close Arduino IDE, PlatformIO and every serial monitor, then unplug and reconnect
+      the stick and reload this page. Use Chrome or Edge on a computer and a USB data cable. If it
+      still fails, confirm that a USB serial device appears in Windows Device Manager.</p>
+  </details>
 </div>
 
 <h2>What's in this build</h2>
