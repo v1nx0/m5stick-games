@@ -196,10 +196,10 @@ index 0000000..9339124
 +    infrared_scan_io(true);
 +}
 diff --git a/applications/main/infrared/scenes/infrared_scene_config.h b/applications/main/infrared/scenes/infrared_scene_config.h
-index 89c03b8..be263e6 100644
+index 89c03b8..78ec7ed 100644
 --- a/applications/main/infrared/scenes/infrared_scene_config.h
 +++ b/applications/main/infrared/scenes/infrared_scene_config.h
-@@ -17,6 +17,8 @@ ADD_SCENE(infrared, remote_list, RemoteList)
+@@ -17,10 +17,13 @@ ADD_SCENE(infrared, remote_list, RemoteList)
  ADD_SCENE(infrared, universal, Universal)
  ADD_SCENE(infrared, universal_tv, UniversalTV)
  ADD_SCENE(infrared, universal_ac, UniversalAC)
@@ -208,6 +208,11 @@ index 89c03b8..be263e6 100644
  ADD_SCENE(infrared, universal_fan, UniversalFan)
  ADD_SCENE(infrared, universal_audio, UniversalAudio)
  ADD_SCENE(infrared, universal_projector, UniversalProjector)
+ ADD_SCENE(infrared, universal_leds, UniversalLEDs)
++ADD_SCENE(infrared, universal_camera, UniversalCamera)
+ ADD_SCENE(infrared, gpio_settings, GpioSettings)
+ ADD_SCENE(infrared, debug, Debug)
+ ADD_SCENE(infrared, error_databases, ErrorDatabases)
 diff --git a/applications/main/infrared/scenes/infrared_scene_find_remote.c b/applications/main/infrared/scenes/infrared_scene_find_remote.c
 new file mode 100644
 index 0000000..d97ac06
@@ -426,12 +431,28 @@ index 07782c0..8727016 100644
  };
  
  static const char* infrared_scene_gpio_settings_otg_text[] = {
+diff --git a/applications/main/infrared/scenes/infrared_scene_start.c b/applications/main/infrared/scenes/infrared_scene_start.c
+index 314f486..07609ea 100644
+--- a/applications/main/infrared/scenes/infrared_scene_start.c
++++ b/applications/main/infrared/scenes/infrared_scene_start.c
+@@ -27,7 +27,7 @@ void infrared_scene_start_on_enter(void* context) {
+         infrared);
+     submenu_add_item(
+         submenu,
+-        "Learn New Remote",
++        "Learn & Replay",
+         SubmenuIndexLearnNewRemote,
+         infrared_scene_start_submenu_callback,
+         infrared);
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal.c b/applications/main/infrared/scenes/infrared_scene_universal.c
-index 2a15695..27fd25c 100644
+index 2a15695..0513f6c 100644
 --- a/applications/main/infrared/scenes/infrared_scene_universal.c
 +++ b/applications/main/infrared/scenes/infrared_scene_universal.c
-@@ -7,6 +7,10 @@ typedef enum {
+@@ -5,8 +5,13 @@ typedef enum {
+     SubmenuIndexUniversalAudio,
+     SubmenuIndexUniversalProjector,
      SubmenuIndexUniversalLEDs,
++    SubmenuIndexUniversalCamera,
      SubmenuIndexUniversalFan,
      SubmenuIndexUniversalAirConditioner,
 +    SubmenuIndexUniversalAcFull,
@@ -441,7 +462,27 @@ index 2a15695..27fd25c 100644
  } SubmenuIndex;
  
  static void infrared_scene_universal_submenu_callback(void* context, uint32_t index) {
-@@ -59,6 +63,26 @@ void infrared_scene_universal_on_enter(void* context) {
+@@ -41,11 +46,18 @@ void infrared_scene_universal_on_enter(void* context) {
+ 
+     submenu_add_item(
+         submenu,
+-        "LEDs",
++        "LED Controller",
+         SubmenuIndexUniversalLEDs,
+         infrared_scene_universal_submenu_callback,
+         context);
+ 
++    submenu_add_item(
++        submenu,
++        "Camera Remote",
++        SubmenuIndexUniversalCamera,
++        infrared_scene_universal_submenu_callback,
++        context);
++
+     submenu_add_item(
+         submenu,
+         "Fans",
+@@ -59,6 +71,26 @@ void infrared_scene_universal_on_enter(void* context) {
          SubmenuIndexUniversalAirConditioner,
          infrared_scene_universal_submenu_callback,
          context);
@@ -468,7 +509,13 @@ index 2a15695..27fd25c 100644
  
      submenu_set_selected_item(
          submenu, scene_manager_get_scene_state(infrared->scene_manager, InfraredSceneUniversal));
-@@ -87,6 +111,22 @@ bool infrared_scene_universal_on_event(void* context, SceneManagerEvent event) {
+@@ -84,9 +116,28 @@ bool infrared_scene_universal_on_event(void* context, SceneManagerEvent event) {
+         } else if(event.event == SubmenuIndexUniversalLEDs) {
+             scene_manager_next_scene(scene_manager, InfraredSceneUniversalLEDs);
+             consumed = true;
++        } else if(event.event == SubmenuIndexUniversalCamera) {
++            scene_manager_next_scene(scene_manager, InfraredSceneUniversalCamera);
++            consumed = true;
          } else if(event.event == SubmenuIndexUniversalFan) {
              scene_manager_next_scene(scene_manager, InfraredSceneUniversalFan);
              consumed = true;
