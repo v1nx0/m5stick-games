@@ -1,6 +1,6 @@
 """Full brand remotes for Infrared > Saved Remotes (installed by WiFi > Update SD).
 
-Usage: python tools/ir_remotes.py <Flipper-IRDB git tree json>
+Usage: python tools/ir_remotes.py <Flipper-IRDB git tree json> [TVs|Projectors ...]
 Downloads Flipper-IRDB (CC0) remotes, keeps only signals the firmware accepts (it
 rejects a whole file at the first bad one) and writes ONE file per brand,
 infrared/<Folder>/<Brand>.ir: the stick's LittleFS spends a 4 KB block per file, so
@@ -17,7 +17,10 @@ IRDB = "https://raw.githubusercontent.com/Lucaslhm/Flipper-IRDB/main/"
 # folder -> brands to keep (None = all). TVs: major brands only, storage is limited.
 FOLDERS = {
     "TVs": {"Samsung", "LG", "Sony", "Philips", "Panasonic", "Sharp", "Hisense", "TCL", "Toshiba",
-            "Xiaomi", "Grundig", "JVC", "Hitachi", "Vizio", "Haier", "Akai"},
+            "Xiaomi", "Grundig", "JVC", "Hitachi", "Vizio", "Haier", "Akai", "Amazon", "Blaupunkt",
+            "Bush", "Daewoo", "Dynex", "Element", "Emerson", "Funai", "Insignia", "Magnavox", "NEC",
+            "Onn", "Pioneer", "RCA", "Roku", "Sanyo", "Sceptre", "Telefunken", "Thomson", "Westinghouse",
+            "Zenith"},
     "Projectors": None,
 }
 OUT = "infrared"
@@ -36,7 +39,10 @@ def safe(name):
 
 
 tree = [x["path"] for x in json.load(open(sys.argv[1]))["tree"] if x["path"].endswith(".ir")]
+selected = set(sys.argv[2:]) or set(FOLDERS)
 for folder, keep in FOLDERS.items():
+    if folder not in selected:
+        continue
     paths = [p for p in tree if p.split("/")[0] == folder and len(p.split("/")) > 2
              and (keep is None or p.split("/")[1] in keep)]
     with cf.ThreadPoolExecutor(16) as ex:
