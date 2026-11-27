@@ -1455,6 +1455,95 @@ index f16634a..cab9090 100644
                  // Update-SD-Flow braucht keinen ARP-Scan → direkt zur
                  // Bestätigung/Download-Scene.
                  scene_manager_next_scene(app->scene_manager, WlanAppSceneUpdateSd);
+diff --git a/applications/main/wlan_app/scenes/scene_update_sd.c b/applications/main/wlan_app/scenes/scene_update_sd.c
+index ac560c2..0d4bf40 100644
+--- a/applications/main/wlan_app/scenes/scene_update_sd.c
++++ b/applications/main/wlan_app/scenes/scene_update_sd.c
+@@ -1,10 +1,12 @@
+ #include "../wlan_app.h"
+ #include "../wlan_sd_update.h"
++#include <power/power_service/power.h>
+ 
+ typedef enum {
+     UpdateSdStateConfirm = 0,
+     UpdateSdStateRunning,
+     UpdateSdStateDone,
++    UpdateSdStateRestartArmed,
+     UpdateSdStateUpToDate,
+     UpdateSdStateError,
+ } UpdateSdState;
+@@ -50,6 +52,14 @@ static void update_sd_done_popup_cb(void* context) {
+         app->view_dispatcher, WlanAppCustomEventUpdateSdFinished);
+ }
+ 
++static void update_sd_restart_cb(GuiButtonType result, InputType type, void* context) {
++    WlanApp* app = context;
++    if(type == InputTypeShort && result == GuiButtonTypeCenter) {
++        view_dispatcher_send_custom_event(
++            app->view_dispatcher, WlanAppCustomEventUpdateSdRestart);
++    }
++}
++
+ static void update_sd_show_confirm(WlanApp* app) {
+     widget_reset(app->widget);
+     widget_add_string_element(
+@@ -90,14 +100,30 @@ static void update_sd_show_uptodate(WlanApp* app) {
+ }
+ 
+ static void update_sd_show_done(WlanApp* app) {
+-    popup_reset(app->popup);
+-    popup_set_header(app->popup, "Update SD", 64, 10, AlignCenter, AlignTop);
+-    popup_set_text(app->popup, "Done!", 64, 36, AlignCenter, AlignCenter);
+-    popup_set_context(app->popup, app);
+-    popup_set_callback(app->popup, update_sd_done_popup_cb);
+-    popup_set_timeout(app->popup, UPDATE_SD_DONE_POPUP_MS);
+-    popup_enable_timeout(app->popup);
+-    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewPopup);
++    widget_reset(app->widget);
++    widget_add_string_element(
++        app->widget, 64, 13, AlignCenter, AlignBottom, FontPrimary, "Restart M5?");
++    widget_add_string_element(
++        app->widget, 64, 31, AlignCenter, AlignBottom, FontSecondary,
++        "Load Dolphin animations");
++    widget_add_string_element(
++        app->widget, 64, 45, AlignCenter, AlignBottom, FontSecondary,
++        "Press M5 twice for Yes");
++    widget_add_button_element(
++        app->widget, GuiButtonTypeCenter, "M5", update_sd_restart_cb, app);
++    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewWidget);
++}
++
++static void update_sd_show_restart_armed(WlanApp* app) {
++    widget_reset(app->widget);
++    widget_add_string_element(
++        app->widget, 64, 20, AlignCenter, AlignBottom, FontPrimary, "Restart M5?");
++    widget_add_string_element(
++        app->widget, 64, 39, AlignCenter, AlignBottom, FontSecondary,
++        "Press M5 once more");
++    widget_add_button_element(
++        app->widget, GuiButtonTypeCenter, "Restart", update_sd_restart_cb, app);
++    view_dispatcher_switch_to_view(app->view_dispatcher, WlanAppViewWidget);
+ }
+ 
+ static void update_sd_show_error(WlanApp* app, const char* msg) {
+@@ -136,6 +162,17 @@ bool wlan_app_scene_update_sd_on_event(void* context, SceneManagerEvent event) {
+             scene_manager_search_and_switch_to_previous_scene(
+                 app->scene_manager, WlanAppSceneMain);
+             consumed = true;
++        } else if(event.event == WlanAppCustomEventUpdateSdRestart &&
++                  update_sd_get_state(app) == UpdateSdStateDone) {
++            update_sd_set_state(app, UpdateSdStateRestartArmed);
++            update_sd_show_restart_armed(app);
++            consumed = true;
++        } else if(event.event == WlanAppCustomEventUpdateSdRestart &&
++                  update_sd_get_state(app) == UpdateSdStateRestartArmed) {
++            Power* power = furi_record_open(RECORD_POWER);
++            power_reboot(power, PowerBootModeNormal);
++            furi_record_close(RECORD_POWER);
++            consumed = true;
+         }
+     } else if(event.type == SceneManagerEventTypeTick) {
+         if(update_sd_get_state(app) == UpdateSdStateRunning) {
 diff --git a/applications/main/wlan_app/scenes/scene_wol.c b/applications/main/wlan_app/scenes/scene_wol.c
 new file mode 100644
 index 0000000..e1cb06d
@@ -1590,6 +1679,18 @@ index 0000000..e1cb06d
 +    text_input_reset(app->text_input);
 +    popup_reset(app->popup);
 +}
+diff --git a/applications/main/wlan_app/views/wlan_view_events.h b/applications/main/wlan_app/views/wlan_view_events.h
+index b75ef65..9e958dc 100644
+--- a/applications/main/wlan_app/views/wlan_view_events.h
++++ b/applications/main/wlan_app/views/wlan_view_events.h
+@@ -60,6 +60,7 @@ typedef enum {
+     WlanAppCustomEventUpdateSdStart = 200,
+     WlanAppCustomEventUpdateSdCancel = 201,
+     WlanAppCustomEventUpdateSdFinished = 202,
++    WlanAppCustomEventUpdateSdRestart = 203,
+     WlanAppCustomEventDeautherSmartToggle = 210,
+     WlanAppCustomEventKarmaToggle = 220,
+ } WlanAppCustomEvent;
 diff --git a/applications/main/wlan_app/wlan_app.h b/applications/main/wlan_app/wlan_app.h
 index 349fbad..06ba0d7 100644
 --- a/applications/main/wlan_app/wlan_app.h
