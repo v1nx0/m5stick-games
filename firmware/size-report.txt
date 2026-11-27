@@ -2,7 +2,7 @@ Executing action: size
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2e0d00 bytes. Smallest app partition is 0x300000 bytes. 0x1f300 bytes (4%) free.
+furi_esp32.bin binary size 0x2e0d10 bytes. Smallest app partition is 0x300000 bytes. 0x1f2f0 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -18,8 +18,8 @@ Executing "ninja size"...
 ┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
 │ Flash Code            │      2363110 │     70.7 │         979194 │       3342304 │
 │    .text              │      2363110 │     70.7 │                │               │
-│ Flash Data            │       511460 │    12.19 │        3682812 │       4194272 │
-│    .rodata            │       511204 │    12.19 │                │               │
+│ Flash Data            │       511476 │    12.19 │        3682796 │       4194272 │
+│    .rodata            │       511220 │    12.19 │                │               │
 │    .appdesc           │          256 │     0.01 │                │               │
 │ IRAM                  │       117987 │    90.02 │          13085 │        131072 │
 │    .text              │       116959 │    89.23 │                │               │
@@ -35,12 +35,12 @@ Executing "ninja size"...
 │ RTC SLOW              │           24 │     0.29 │           8168 │          8192 │
 │    .rtc_slow_reserved │           24 │     0.29 │                │               │
 └───────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
-Total image size: 3017855 bytes (.bin may be padded larger)
+Total image size: 3017871 bytes (.bin may be padded larger)
 Executing action: size-components
 Running ninja in directory /__w/m5stick-games/m5stick-games/fw/build_esp32
 Executing "ninja all"...
 [1/4] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /__w/m5stick-games/m5stick-games/fw/build_esp32/partition_table/partition-table.bin /__w/m5stick-games/m5stick-games/fw/build_esp32/furi_esp32.bin
-furi_esp32.bin binary size 0x2e0d00 bytes. Smallest app partition is 0x300000 bytes. 0x1f300 bytes (4%) free.
+furi_esp32.bin binary size 0x2e0d10 bytes. Smallest app partition is 0x300000 bytes. 0x1f2f0 bytes (4%) free.
 Warning: The smallest app partition is nearly full (4% free space left)!
 [2/4] Performing build step for 'bootloader'
 [1/1] cd /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/esp-idf/esptool_py && /opt/esp/python_env/idf5.4_py3.12_env/bin/python /opt/esp/idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /__w/m5stick-games/m5stick-games/fw/build_esp32/bootloader/bootloader.bin
@@ -56,7 +56,7 @@ Executing "ninja size-components"...
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
 │ libmain.a                │     608626 │ 49343 │ 47801 │  1542 │  1089 │  1089 │        0 │     491587 │ 491587 │      46383 │   46383 │        0 │    20224 │ 20224 │        0 │           0 │     0 │        0 │                  0 │
 │ libbt.a                  │     299803 │  4717 │     0 │  4717 │  1478 │  1478 │        0 │     263415 │ 263415 │      16822 │   16822 │        0 │    13371 │ 13371 │        0 │           0 │     0 │        0 │                  0 │
-│ libefuse.a               │     275497 │    64 │     4 │    60 │     0 │     0 │        0 │       1162 │   1162 │     274271 │  274271 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
+│ libefuse.a               │     275509 │    64 │     4 │    60 │     0 │     0 │        0 │       1162 │   1162 │     274283 │  274283 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ libnet80211.a            │     150534 │  1075 │     0 │  1075 │     0 │     0 │        0 │     129952 │ 129952 │      11017 │   11017 │        0 │     8490 │  8490 │        0 │           0 │     0 │        0 │                  0 │
 │ libsubghz.a              │     147800 │    53 │    53 │     0 │     0 │     0 │        0 │     139542 │ 139542 │       8205 │    8205 │        0 │        0 │     0 │        0 │           0 │     0 │        0 │                  0 │
 │ liblwip.a                │     110566 │    16 │     0 │    16 │     0 │     0 │        0 │     102739 │ 102739 │       4037 │    4037 │        0 │     3774 │  3774 │        0 │           0 │     0 │        0 │                  0 │
