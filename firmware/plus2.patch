@@ -195,6 +195,48 @@ index 0000000..9339124
 +    scan_speed = (uint8_t)((scan_speed + 1) % COUNT_OF(SCAN_NAMES));
 +    infrared_scan_io(true);
 +}
+diff --git a/applications/main/infrared/resources/infrared/assets/cameras.ir b/applications/main/infrared/resources/infrared/assets/cameras.ir
+new file mode 100644
+index 0000000..9707f54
+--- /dev/null
++++ b/applications/main/infrared/resources/infrared/assets/cameras.ir
+@@ -0,0 +1,36 @@
++Filetype: IR library file
++Version: 1
++# Canon RC-6 compatible cameras
++name: Shutter
++type: raw
++frequency: 38000
++duty_cycle: 0.33
++data: 502 7213 290 67972 463
++#
++# Nikon ML-L3 compatible cameras
++name: Shutter
++type: raw
++frequency: 38000
++duty_cycle: 0.33
++data: 1989 27513 408 1569 386 3503 408 62013 1985 27517 404 1573 382 3506 405
++#
++# Sony Alpha/NEX cameras with an IR receiver
++name: Shutter
++type: parsed
++protocol: SIRC20
++address: 3A 1E 00 00
++command: 2D 00 00 00
++#
++# Pentax cameras with an IR receiver
++name: Shutter
++type: raw
++frequency: 38000
++duty_cycle: 0.33
++data: 12728 3095 987 1035 980 1040 985 1035 980 1040 985 1067 979 1041 984
++#
++# Olympus cameras with an IR receiver
++name: Shutter
++type: parsed
++protocol: NECext
++address: 86 3B 00 00
++command: 01 FE 00 00
 diff --git a/applications/main/infrared/scenes/infrared_scene_config.h b/applications/main/infrared/scenes/infrared_scene_config.h
 index 89c03b8..78ec7ed 100644
 --- a/applications/main/infrared/scenes/infrared_scene_config.h
@@ -893,6 +935,48 @@ index 0000000..3f695bd
 +    dialog_ex_reset(infrared->dialog_ex);
 +    ac_scan_stop();
 +    ac.picking = false;
++}
+diff --git a/applications/main/infrared/scenes/infrared_scene_universal_camera.c b/applications/main/infrared/scenes/infrared_scene_universal_camera.c
+new file mode 100644
+index 0000000..b611c4b
+--- /dev/null
++++ b/applications/main/infrared/scenes/infrared_scene_universal_camera.c
+@@ -0,0 +1,36 @@
++#include "../infrared_app_i.h"
++
++#include "common/infrared_scene_universal_common.h"
++
++void infrared_scene_universal_camera_on_enter(void* context) {
++    InfraredApp* infrared = context;
++    ButtonPanel* button_panel = infrared->button_panel;
++    InfraredBruteForce* brute_force = infrared->brute_force;
++
++    infrared_brute_force_set_db_filename(brute_force, EXT_PATH("infrared/assets/cameras.ir"));
++    button_panel_reserve(button_panel, 1, 1);
++    button_panel_add_item(
++        button_panel,
++        0,
++        0,
++        0,
++        23,
++        48,
++        &I_play_19x20,
++        &I_play_hover_19x20,
++        infrared_scene_universal_common_item_callback,
++        context);
++    infrared_brute_force_add_record(brute_force, 0, "Shutter");
++    button_panel_add_label(button_panel, 4, 10, FontPrimary, "Camera remote");
++    button_panel_add_label(button_panel, 10, 76, FontSecondary, "SHUTTER");
++
++    infrared_scene_universal_common_on_enter(context);
++}
++
++bool infrared_scene_universal_camera_on_event(void* context, SceneManagerEvent event) {
++    return infrared_scene_universal_common_on_event(context, event);
++}
++
++void infrared_scene_universal_camera_on_exit(void* context) {
++    infrared_scene_universal_common_on_exit(context);
 +}
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_projector.c b/applications/main/infrared/scenes/infrared_scene_universal_projector.c
 index ac3f0c3..8f59051 100644
