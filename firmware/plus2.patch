@@ -116,6 +116,19 @@ index 8ebe9bd..f7ff60a 100644
      order=40,
      sources=["*.c", "!infrared_cli.c"],
      resources="resources",
+diff --git a/applications/main/infrared/infrared_app.c b/applications/main/infrared/infrared_app.c
+index 77e3744..8a03fe3 100644
+--- a/applications/main/infrared/infrared_app.c
++++ b/applications/main/infrared/infrared_app.c
+@@ -166,7 +166,7 @@ static InfraredApp* infrared_alloc(void) {
+     view_dispatcher_set_event_callback_context(view_dispatcher, infrared);
+     view_dispatcher_set_custom_event_callback(view_dispatcher, infrared_custom_event_callback);
+     view_dispatcher_set_navigation_event_callback(view_dispatcher, infrared_back_event_callback);
+-    view_dispatcher_set_tick_event_callback(view_dispatcher, infrared_tick_event_callback, 100);
++    view_dispatcher_set_tick_event_callback(view_dispatcher, infrared_tick_event_callback, 80);
+ 
+     infrared->storage = furi_record_open(RECORD_STORAGE);
+     infrared->dialogs = furi_record_open(RECORD_DIALOGS);
 diff --git a/applications/main/infrared/infrared_app_i.h b/applications/main/infrared/infrared_app_i.h
 index caed2d6..ba7413b 100644
 --- a/applications/main/infrared/infrared_app_i.h
