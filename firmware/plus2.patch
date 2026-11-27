@@ -396,6 +396,23 @@ index 0000000..d97ac06
 +    find_stop();
 +    dialog_ex_reset(infrared->dialog_ex);
 +}
+diff --git a/applications/main/infrared/scenes/infrared_scene_gpio_settings.c b/applications/main/infrared/scenes/infrared_scene_gpio_settings.c
+index 07782c0..8727016 100644
+--- a/applications/main/infrared/scenes/infrared_scene_gpio_settings.c
++++ b/applications/main/infrared/scenes/infrared_scene_gpio_settings.c
+@@ -1,9 +1,9 @@
+ #include "../infrared_app_i.h"
+ 
+ static const char* infrared_scene_gpio_settings_pin_text[] = {
+-    "Flipper",
+-    "2 (A7)",
+-    "Detect",
++    "Internal",
++    "G32 (Grove)",
++    "Auto",
+ };
+ 
+ static const char* infrared_scene_gpio_settings_otg_text[] = {
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal.c b/applications/main/infrared/scenes/infrared_scene_universal.c
 index 2a15695..27fd25c 100644
 --- a/applications/main/infrared/scenes/infrared_scene_universal.c
@@ -3378,7 +3395,7 @@ index 234db6b..63335ef 100644
  
  # HID backend: TinyUSB on SoCs with USB-OTG, stub elsewhere.
 diff --git a/components/furi_hal/boards/board_m5stickcplus2.h b/components/furi_hal/boards/board_m5stickcplus2.h
-index 246f249..681b665 100644
+index 246f249..00a08d9 100644
 --- a/components/furi_hal/boards/board_m5stickcplus2.h
 +++ b/components/furi_hal/boards/board_m5stickcplus2.h
 @@ -27,6 +27,7 @@
@@ -3389,7 +3406,14 @@ index 246f249..681b665 100644
  #define BOARD_LCD_SPI_HOST      SPI2_HOST
  #define BOARD_LCD_SPI_FREQ_HZ   (40 * 1000 * 1000)
  #define BOARD_LCD_CMD_BITS      8
-@@ -82,6 +83,7 @@
+@@ -76,12 +77,14 @@
+ 
+ /* IR pins */
+ #define BOARD_PIN_IR_TX         19
++#define BOARD_PIN_IR_TX_EXT     32 /* Grove yellow wire */
+ #define BOARD_PIN_IR_RX         -1
+ 
+ #define BOARD_HAS_TOUCH         0
  #define BOARD_HAS_SD_CARD       0
  #define BOARD_HAS_BLE           1
  #define BOARD_HAS_IMU           1
@@ -3457,6 +3481,80 @@ index 5c54a9b..d90d4a8 100644
 +
 +/** Force the always-on top bar to repaint (call after drawing over the whole panel). */
 +void furi_hal_display_top_bar_invalidate(void);
+diff --git a/components/furi_hal/furi_hal_infrared.c b/components/furi_hal/furi_hal_infrared.c
+index 8018a34..3cd4cba 100644
+--- a/components/furi_hal/furi_hal_infrared.c
++++ b/components/furi_hal/furi_hal_infrared.c
+@@ -27,9 +27,15 @@
+ #if BOARD_HAS_IR
+ #define IR_TX_GPIO  BOARD_PIN_IR_TX
+ #define IR_RX_GPIO  BOARD_PIN_IR_RX
++#ifdef BOARD_PIN_IR_TX_EXT
++#define IR_TX_EXT_GPIO BOARD_PIN_IR_TX_EXT
++#else
++#define IR_TX_EXT_GPIO GPIO_NUM_NC
++#endif
+ #else
+ #define IR_TX_GPIO  GPIO_NUM_NC
+ #define IR_RX_GPIO  GPIO_NUM_NC
++#define IR_TX_EXT_GPIO GPIO_NUM_NC
+ #endif
+ 
+ #define IR_RMT_RX_MEM_BLOCK_SYMBOLS 128
+@@ -76,6 +82,7 @@ static struct {
+ } ir_tx;
+ 
+ static volatile InfraredState ir_state = InfraredStateIdle;
++static gpio_num_t ir_tx_gpio = IR_TX_GPIO;
+ 
+ /* Debug: monotonically increasing send sequence, incremented in
+  * async_tx_start() before the pump task is created so the task's own log
+@@ -490,7 +497,7 @@ void furi_hal_infrared_async_tx_start(uint32_t freq, float duty_cycle) {
+         .resolution_hz = IR_RMT_TX_RESOLUTION_HZ,
+         .mem_block_symbols = 64,
+         .trans_queue_depth = 4,
+-        .gpio_num = IR_TX_GPIO,
++        .gpio_num = ir_tx_gpio,
+         .flags = {
+             .invert_out = false,
+             .with_dma = false,
+@@ -611,11 +618,17 @@ bool furi_hal_infrared_is_busy(void) {
+ }
+ 
+ FuriHalInfraredTxPin furi_hal_infrared_detect_tx_output(void) {
+-    /* ESP32 boards only have internal IR TX */
++    /* External modules cannot be detected electrically on a plain GPIO. */
+     return FuriHalInfraredTxPinInternal;
+ }
+ 
+ void furi_hal_infrared_set_tx_output(FuriHalInfraredTxPin tx_pin) {
+-    /* Only internal pin supported, ignore */
+-    (void)tx_pin;
++    furi_check(ir_state == InfraredStateIdle);
++    if(tx_pin == FuriHalInfraredTxPinExtPA7 && IR_TX_EXT_GPIO >= 0) {
++        ir_tx_gpio = IR_TX_EXT_GPIO;
++        FURI_LOG_I("IR", "TX output: external GPIO%d", ir_tx_gpio);
++    } else {
++        ir_tx_gpio = IR_TX_GPIO;
++        FURI_LOG_I("IR", "TX output: internal GPIO%d", ir_tx_gpio);
++    }
+ }
+diff --git a/components/furi_hal/furi_hal_infrared.h b/components/furi_hal/furi_hal_infrared.h
+index cd61f00..3318841 100644
+--- a/components/furi_hal/furi_hal_infrared.h
++++ b/components/furi_hal/furi_hal_infrared.h
+@@ -149,9 +149,9 @@ void furi_hal_infrared_async_tx_set_signal_sent_isr_callback(
+     FuriHalInfraredTxSignalSentISRCallback callback,
+     void* context);
+ 
+-/** Detect which pin has an external IR module connected.
++/** Detect which infrared output should be used.
+  *
+- * @return FuriHalInfraredTxPinInternal (always, on ESP32).
++ * @return FuriHalInfraredTxPinInternal when automatic detection is unavailable.
+  */
+ FuriHalInfraredTxPin furi_hal_infrared_detect_tx_output(void);
+ 
 diff --git a/components/furi_hal/furi_hal_power.c b/components/furi_hal/furi_hal_power.c
 index 6d5140d..d15a998 100644
 --- a/components/furi_hal/furi_hal_power.c
