@@ -1729,7 +1729,7 @@ index 1f78604..5b61ff6 100644
  }
  
 diff --git a/applications/main/wlan_app/wlan_sd_update.c b/applications/main/wlan_app/wlan_sd_update.c
-index 8a5d7bd..ef1365e 100644
+index 8a5d7bd..c58c9ff 100644
 --- a/applications/main/wlan_app/wlan_sd_update.c
 +++ b/applications/main/wlan_app/wlan_sd_update.c
 @@ -25,11 +25,16 @@
@@ -1934,9 +1934,9 @@ index 8a5d7bd..ef1365e 100644
 +        } else {
 +            u->phase = WlanSdUpdateIdle;
 +        }
-         sd_update_finish(u);
-         return;
-     }
++        sd_update_finish(u);
++        return;
++    }
 +    if(u->mode == 2) {
 +        u->phase = WlanSdUpdateDownloading;
 +        char dest[256], url[400];
@@ -1964,35 +1964,38 @@ index 8a5d7bd..ef1365e 100644
 +        } else {
 +            u->phase = WlanSdUpdateIdle;
 +        }
-+        sd_update_finish(u);
-+        return;
-+    }
+         sd_update_finish(u);
+         return;
+     }
 +
 +    bool up_to_date = !u->cancel && sd_update_is_up_to_date();
      if(u->cancel) {
          u->phase = WlanSdUpdateIdle;
          sd_update_finish(u);
-@@ -475,9 +601,17 @@ static void sd_update_task(void* arg) {
+@@ -475,9 +601,19 @@ static void sd_update_task(void* arg) {
      u->phase = WlanSdUpdateDownloading;
      u->percent = 0;
  
 -    bool ok = sd_update_sync(u);
+-
+-    if(ok) {
 +    uint32_t fetched = 0;
-+    bool ok = up_to_date || sd_update_sync(u, SD_UPDATE_RAW_BASE, NULL, &fetched);
++    // version.txt is only a release marker; always verify the manifest so a
++    // missing or interrupted resource is repaired on the next update.
++    bool ok = sd_update_sync(u, SD_UPDATE_RAW_BASE, NULL, &fetched);
 +    // extra files from our repo (IR code packs, Bad USB scripts): checked on every
 +    // update, since m5resources' version.txt says nothing about them
 +    static const char* const own_dirs[] = {"infrared/", "badusb/"};
 +    for(size_t i = 0; i < sizeof(own_dirs) / sizeof(own_dirs[0]) && ok && !u->cancel; i++)
 +        ok = sd_update_sync(u, APP_STORE_OWN_BASE, own_dirs[i], &fetched);
- 
--    if(ok) {
++
 +    if(ok && up_to_date && !fetched) {
 +        u->phase = WlanSdUpdateUpToDate;
 +    } else if(ok) {
          u->percent = 100;
          u->phase = WlanSdUpdateDone;
      } else if(u->cancel && u->phase != WlanSdUpdateError) {
-@@ -487,6 +621,14 @@ static void sd_update_task(void* arg) {
+@@ -487,6 +623,14 @@ static void sd_update_task(void* arg) {
      sd_update_finish(u);
  }
  
@@ -2007,7 +2010,7 @@ index 8a5d7bd..ef1365e 100644
  // ---------------------------------------------------------------------------
  // Public API
  // ---------------------------------------------------------------------------
-@@ -502,6 +644,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -502,6 +646,9 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
      u->done_files = 0;
      u->total_files = 0;
      u->err[0] = '\0';
@@ -2017,7 +2020,7 @@ index 8a5d7bd..ef1365e 100644
      sd_update_set_file(u, "version.txt");
      return u;
  }
-@@ -509,10 +654,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
+@@ -509,10 +656,63 @@ WlanSdUpdate* wlan_sd_update_alloc(void) {
  void wlan_sd_update_free(WlanSdUpdate* u) {
      if(!u) return;
      wlan_sd_update_cancel(u);
@@ -2081,7 +2084,7 @@ index 8a5d7bd..ef1365e 100644
      if(u->running) return;
      u->cancel = false;
      u->percent = 0;
-@@ -524,23 +722,33 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
+@@ -524,23 +724,33 @@ void wlan_sd_update_start(WlanSdUpdate* u) {
      u->phase = WlanSdUpdateChecking;
      u->running = true;
      static StaticTask_t sd_upd_tcb;

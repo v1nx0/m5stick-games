@@ -1,0 +1,36 @@
+Filetype: IR library file
+Version: 1
+# Canon RC-6 compatible cameras
+name: Shutter
+type: raw
+frequency: 38000
+duty_cycle: 0.33
+data: 502 7213 290 67972 463
+#
+# Nikon ML-L3 compatible cameras
+name: Shutter
+type: raw
+frequency: 38000
+duty_cycle: 0.33
+data: 1989 27513 408 1569 386 3503 408 62013 1985 27517 404 1573 382 3506 405
+#
+# Sony Alpha/NEX cameras with an IR receiver
+name: Shutter
+type: parsed
+protocol: SIRC20
+address: 3A 1E 00 00
+command: 2D 00 00 00
+#
+# Pentax cameras with an IR receiver
+name: Shutter
+type: raw
+frequency: 38000
+duty_cycle: 0.33
+data: 12728 3095 987 1035 980 1040 985 1035 980 1040 985 1067 979 1041 984
+#
+# Olympus cameras with an IR receiver
+name: Shutter
+type: parsed
+protocol: NECext
+address: 86 3B 00 00
+command: 01 FE 00 00
