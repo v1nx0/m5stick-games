@@ -144,7 +144,7 @@ index caed2d6..7e62a88 100644
 +void infrared_scan_speed_cycle(void);
 diff --git a/applications/main/infrared/infrared_scan.c b/applications/main/infrared/infrared_scan.c
 new file mode 100644
-index 0000000..a324b91
+index 0000000..c51406e
 --- /dev/null
 +++ b/applications/main/infrared/infrared_scan.c
 @@ -0,0 +1,47 @@
@@ -154,8 +154,8 @@ index 0000000..a324b91
 +
 +#define SCAN_SPEED_FILE EXT_PATH("infrared/.scan_speed")
 +
-+static const char* const SCAN_NAMES[] = {"Fast", "Medium", "Reliable"};
-+static const uint32_t SCAN_STEP_MS[] = {200, 400, 800};
++static const char* const SCAN_NAMES[] = {"Default", "Medium", "Fast"};
++static const uint32_t SCAN_STEP_MS[] = {55, 35, 20};
 +static uint8_t scan_speed = 0;
 +static bool scan_loaded = false;
 +
@@ -487,7 +487,7 @@ index 314f486..07609ea 100644
          infrared_scene_start_submenu_callback,
          infrared);
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal.c b/applications/main/infrared/scenes/infrared_scene_universal.c
-index 2a15695..213b45a 100644
+index 2a15695..0513f6c 100644
 --- a/applications/main/infrared/scenes/infrared_scene_universal.c
 +++ b/applications/main/infrared/scenes/infrared_scene_universal.c
 @@ -5,8 +5,13 @@ typedef enum {
@@ -569,7 +569,7 @@ index 2a15695..213b45a 100644
 +            scene_manager_next_scene(scene_manager, InfraredSceneFindRemote);
 +            consumed = true;
 +        } else if(event.event == SubmenuIndexScanSpeed) {
-+            infrared_scan_speed_cycle(); // Fast -> Medium -> Reliable, saved
++            infrared_scan_speed_cycle(); // Default -> Medium -> Fast, saved
 +            char label[32];
 +            snprintf(label, sizeof(label), "Scan speed: %s", infrared_scan_speed_name());
 +            submenu_change_item_label(infrared->submenu, SubmenuIndexScanSpeed, label);
