@@ -117,7 +117,7 @@ index 8ebe9bd..f7ff60a 100644
      sources=["*.c", "!infrared_cli.c"],
      resources="resources",
 diff --git a/applications/main/infrared/infrared_app.c b/applications/main/infrared/infrared_app.c
-index 77e3744..7375345 100644
+index 77e3744..c5c015d 100644
 --- a/applications/main/infrared/infrared_app.c
 +++ b/applications/main/infrared/infrared_app.c
 @@ -166,7 +166,7 @@ static InfraredApp* infrared_alloc(void) {
@@ -125,12 +125,12 @@ index 77e3744..7375345 100644
      view_dispatcher_set_custom_event_callback(view_dispatcher, infrared_custom_event_callback);
      view_dispatcher_set_navigation_event_callback(view_dispatcher, infrared_back_event_callback);
 -    view_dispatcher_set_tick_event_callback(view_dispatcher, infrared_tick_event_callback, 100);
-+    view_dispatcher_set_tick_event_callback(view_dispatcher, infrared_tick_event_callback, 45);
++    view_dispatcher_set_tick_event_callback(view_dispatcher, infrared_tick_event_callback, 20);
  
      infrared->storage = furi_record_open(RECORD_STORAGE);
      infrared->dialogs = furi_record_open(RECORD_DIALOGS);
 diff --git a/applications/main/infrared/infrared_app_i.h b/applications/main/infrared/infrared_app_i.h
-index caed2d6..0cc3164 100644
+index caed2d6..7e62a88 100644
 --- a/applications/main/infrared/infrared_app_i.h
 +++ b/applications/main/infrared/infrared_app_i.h
 @@ -347,3 +347,8 @@ void infrared_text_input_callback(void* context);
@@ -138,24 +138,24 @@ index caed2d6..0cc3164 100644
   */
  void infrared_popup_closed_callback(void* context);
 +
-+/** Find my AC / TV / Projector: interval that keeps the full scan at the selected duration. */
-+uint32_t infrared_scan_step_ms(size_t brand_count);
++/** Find my AC / TV / Projector: ms each brand is tried (Fast/Medium/Reliable, saved). */
++uint32_t infrared_scan_step_ms(void);
 +const char* infrared_scan_speed_name(void);
 +void infrared_scan_speed_cycle(void);
 diff --git a/applications/main/infrared/infrared_scan.c b/applications/main/infrared/infrared_scan.c
 new file mode 100644
-index 0000000..516d756
+index 0000000..a324b91
 --- /dev/null
 +++ b/applications/main/infrared/infrared_scan.c
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,47 @@
 +// Shared speed for the "Find my AC / TV / Projector" searches: how long each brand
 +// is tried before the next one (time to see the device react and press OK).
 +#include "infrared_app_i.h"
 +
 +#define SCAN_SPEED_FILE EXT_PATH("infrared/.scan_speed")
 +
-+static const char* const SCAN_NAMES[] = {"Fast (10s)", "Medium (20s)", "Reliable (40s)"};
-+static const uint32_t SCAN_TOTAL_MS[] = {10000, 20000, 40000};
++static const char* const SCAN_NAMES[] = {"Fast", "Medium", "Reliable"};
++static const uint32_t SCAN_STEP_MS[] = {200, 400, 800};
 +static uint8_t scan_speed = 0;
 +static bool scan_loaded = false;
 +
@@ -180,10 +180,9 @@ index 0000000..516d756
 +    scan_loaded = true;
 +}
 +
-+uint32_t infrared_scan_step_ms(size_t brand_count) {
++uint32_t infrared_scan_step_ms(void) {
 +    infrared_scan_load();
-+    if(!brand_count) return SCAN_TOTAL_MS[scan_speed];
-+    return (SCAN_TOTAL_MS[scan_speed] + brand_count - 1) / brand_count;
++    return SCAN_STEP_MS[scan_speed];
 +}
 +
 +const char* infrared_scan_speed_name(void) {
@@ -258,7 +257,7 @@ index 89c03b8..78ec7ed 100644
  ADD_SCENE(infrared, error_databases, ErrorDatabases)
 diff --git a/applications/main/infrared/scenes/infrared_scene_find_remote.c b/applications/main/infrared/scenes/infrared_scene_find_remote.c
 new file mode 100644
-index 0000000..688591b
+index 0000000..d97ac06
 --- /dev/null
 +++ b/applications/main/infrared/scenes/infrared_scene_find_remote.c
 @@ -0,0 +1,195 @@
@@ -420,7 +419,7 @@ index 0000000..688591b
 +    if(event.event == FIND_EVT_START && find.count && !find.timer) {
 +        find.idx = 0;
 +        find.timer = furi_timer_alloc(find_tick, FuriTimerTypePeriodic, infrared);
-+        furi_timer_start(find.timer, furi_ms_to_ticks(infrared_scan_step_ms(find.count)));
++        furi_timer_start(find.timer, furi_ms_to_ticks(infrared_scan_step_ms()));
 +        find_step(infrared);
 +        return true;
 +    }
@@ -641,10 +640,10 @@ index 15c4b8d..b7f4075 100644
          button_panel,
 diff --git a/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
 new file mode 100644
-index 0000000..2792656
+index 0000000..3f695bd
 --- /dev/null
 +++ b/applications/main/infrared/scenes/infrared_scene_universal_ac_full.c
-@@ -0,0 +1,293 @@
+@@ -0,0 +1,292 @@
 +#include "../infrared_app_i.h" // IWYU pragma: keep
 +#include <irac.h>
 +
@@ -900,8 +899,7 @@ index 0000000..2792656
 +        ac.scan_idx = 0;
 +        ac.power = 0; // the search turns the AC on
 +        ac_scan_timer = furi_timer_alloc(ac_scan_tick, FuriTimerTypePeriodic, infrared);
-+        furi_timer_start(
-+            ac_scan_timer, furi_ms_to_ticks(infrared_scan_step_ms(irac_brand_count())));
++        furi_timer_start(ac_scan_timer, furi_ms_to_ticks(infrared_scan_step_ms()));
 +        ac_scan_step(infrared);
 +    } else if(event.event == AC_EVT_SCAN_NEXT) {
 +        if(!ac.scanning) return true;
