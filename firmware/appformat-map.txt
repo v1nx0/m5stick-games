@@ -53,21 +53,21 @@
 76732: .rodata_desc   0x3f400020      0x100 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
 76733-                0x3f400020                esp_app_desc
 --
-99035- .esp_system_init_fn.20
-99036:                0x3f47cdd4        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-99037- .esp_system_init_fn.21
+99036- .esp_system_init_fn.20
+99037:                0x3f47cdf4        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+99038- .esp_system_init_fn.21
 --
-100063- .literal.esp_app_format_init_elf_sha256
-100064:                0x400d0020        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-100065- .literal.__esp_system_init_fn_init_show_app_info
-100066:                0x400d0028        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-100067-                                  0x4 (size before relaxing)
+100064- .literal.esp_app_format_init_elf_sha256
+100065:                0x400d0020        0x8 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+100066- .literal.__esp_system_init_fn_init_show_app_info
+100067:                0x400d0028        0x0 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+100068-                                  0x4 (size before relaxing)
 --
-106269- .text.esp_app_format_init_elf_sha256
-106270:                0x400d4fa0       0x5c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-106271- .text.__esp_system_init_fn_init_show_app_info
-106272:                0x400d4ffc        0xa esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
-106273-                                  0xd (size before relaxing)
+106270- .text.esp_app_format_init_elf_sha256
+106271:                0x400d4fa4       0x5c esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+106272- .text.__esp_system_init_fn_init_show_app_info
+106273:                0x400d5000        0xa esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+106274-                                  0xd (size before relaxing)
 --
 234729- .debug_aranges
 234730:                0x00000000       0x38 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
@@ -90,7 +90,7 @@
 243410- .debug_frame   0x00000070       0x88 esp-idf/efuse/libefuse.a(esp_efuse_startup.c.obj)
 --
 245064- *(.debug_str)
-245065: .debug_str     0x00000000   0x194d72 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
+245065: .debug_str     0x00000000   0x194d73 esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
 245066-                                0x494 (size before relaxing)
 --
 246797- *(.debug_loc)
@@ -119,8 +119,8 @@
 275253:esp_app_get_elf_sha256                            esp-idf/esp_app_format/libesp_app_format.a(esp_app_desc.c.obj)
 275254-esp_backtrace_get_next_frame                      esp-idf/esp_system/libesp_system.a(debug_helpers.c.obj)
 --- biggest .rodata input sections ---
- .rodata        0x3f479550      0x414 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfiprintf.o)
- .rodata        0x3f4786a0      0x398 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libm.a(libm_a-ef_rem_pio2.o)
- .rodata        0x3f479ce0      0x2f6 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfscanf.o)
- .rodata.K      0x3f474848      0x280 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(esp_sha512.c.obj)
- .rodata        0x3f478b48      0x23c /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-vfprintf.o)
+ .rodata        0x3f479570      0x414 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfiprintf.o)
+ .rodata        0x3f4786c0      0x398 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libm.a(libm_a-ef_rem_pio2.o)
+ .rodata        0x3f479d00      0x2f6 /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-svfscanf.o)
+ .rodata.K      0x3f474868      0x280 esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a(esp_sha512.c.obj)
+ .rodata        0x3f478b68      0x23c /opt/esp/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/lib/esp32/no-rtti/libc.a(libc_a-vfprintf.o)
